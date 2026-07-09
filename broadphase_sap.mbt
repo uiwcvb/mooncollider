@@ -251,3 +251,58 @@ fn AABBTree::collect_leaves(
 pub fn AABBTree::size(self : AABBTree) -> Int {
   self.nodes.length()
 }
+
+///|
+/// Remove a leaf node by its node id (returned from `insert`). The leaf is
+/// detached from the tree and its parent collapsed. The node id is added to
+/// the free list for reuse.
+pub fn AABBTree::remove(self : AABBTree, leaf : Int) -> Unit {
+  if leaf == self.root {
+    self.root = -1
+    self.free_list.push(leaf)
+    return
+  }
+  let parent = self.nodes[leaf].parent
+  let grandparent = self.nodes[parent].parent
+  let sibling = if self.nodes[parent].left == leaf {
+    self.nodes[parent].right
+  } else {
+    self.nodes[parent].left
+  }
+  if grandparent == -1 {
+    self.root = sibling
+    self.nodes[sibling].parent = -1
+  } else {
+    if self.nodes[grandparent].left == parent {
+      self.nodes[grandparent].left = sibling
+    } else {
+      self.nodes[grandparent].right = sibling
+    }
+    self.nodes[sibling].parent = grandparent
+    // Refit up the tree.
+    let mut p = grandparent
+    while p != -1 {
+      let l = self.nodes[p].left
+      let r = self.nodes[p].right
+      self.nodes[p].box = self.nodes[l].box.union(self.nodes[r].box)
+      self.nodes[p].height = 1 + self.nodes[l].height.max(self.nodes[r].height)
+      p = self.nodes[p].parent
+    }
+  }
+  self.free_list.push(parent)
+  self.free_list.push(leaf)
+}
+
+///|
+/// Update a leaf's AABB. If the new box is still contained in the leaf's
+/// current node box, just updates the leaf; otherwise removes and re-inserts
+/// for proper rebalancing.
+pub fn AABBTree::update(self : AABBTree, leaf : Int, box : AABB) -> Unit {
+  if self.nodes[leaf].box.contains_box(box) {
+    self.nodes[leaf].box = box
+    return
+  }
+  let body_id = self.nodes[leaf].body_id
+  self.remove(leaf)
+  ignore(self.insert(body_id, box))
+}

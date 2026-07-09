@@ -1,0 +1,7 @@
+import {
+  "bubuki/mooncollider",
+}
+
+options(
+  "is-main": true,
+)

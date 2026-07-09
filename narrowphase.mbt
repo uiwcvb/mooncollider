@@ -4,6 +4,8 @@
 /// `normal` points from A to B (the direction B should be pushed along to
 /// separate). `depth` is the penetration depth. `contact` is a representative
 /// contact point (the deepest overlap point), useful for torque computation.
+/// `contact2` is an optional second contact point for edge/edge collisions
+/// (AABB-AABB face contacts), improving stacking stability.
 pub(all) struct Manifold {
   /// Unit normal pointing from A towards B.
   normal : Vec2
@@ -11,12 +13,19 @@ pub(all) struct Manifold {
   depth : Double
   /// Representative contact point in world space.
   contact : Vec2
+  /// Optional second contact point (None for single-point manifolds).
+  contact2 : Vec2
 } derive(Eq, Debug)
 
 ///|
 /// An empty manifold (no collision). `normal` is zero, `depth` is 0.
 pub fn Manifold::none() -> Manifold {
-  { normal: Vec2::zero(), depth: 0.0, contact: Vec2::zero() }
+  {
+    normal: Vec2::zero(),
+    depth: 0.0,
+    contact: Vec2::zero(),
+    contact2: Vec2::zero(),
+  }
 }
 
 ///|
@@ -26,9 +35,26 @@ pub fn Manifold::colliding(self : Manifold) -> Bool {
 }
 
 ///|
-/// Build a manifold.
+/// Does this manifold have a second contact point?
+pub fn Manifold::has_second_contact(self : Manifold) -> Bool {
+  self.contact2.length_sq() > 0.0
+}
+
+///|
+/// Build a manifold with a single contact point.
 pub fn Manifold::new(normal : Vec2, depth : Double, contact : Vec2) -> Manifold {
-  { normal, depth, contact }
+  { normal, depth, contact, contact2: Vec2::zero() }
+}
+
+///|
+/// Build a manifold with two contact points.
+pub fn Manifold::new2(
+  normal : Vec2,
+  depth : Double,
+  contact : Vec2,
+  contact2 : Vec2,
+) -> Manifold {
+  { normal, depth, contact, contact2 }
 }
 
 ///|
@@ -50,15 +76,18 @@ pub fn collide_aabb_aabb(a : AABB, b : AABB) -> Manifold {
     let contact_x = if a.center.x < b.center.x { a_hi.x } else { a_lo.x }
     let y_hi = if a_hi.y < b_hi.y { a_hi.y } else { b_hi.y }
     let y_lo = if a_lo.y > b_lo.y { a_lo.y } else { b_lo.y }
-    let cy = (y_hi + y_lo) / 2.0
-    Manifold::new(Vec2::new(nx, 0.0), ox, Vec2::new(contact_x, cy))
+    // Two contact points at the endpoints of the overlapping y-interval.
+    let c1 = Vec2::new(contact_x, y_lo)
+    let c2 = Vec2::new(contact_x, y_hi)
+    Manifold::new2(Vec2::new(nx, 0.0), ox, c1, c2)
   } else {
     let ny = if a.center.y < b.center.y { 1.0 } else { -1.0 }
     let contact_y = if a.center.y < b.center.y { a_hi.y } else { a_lo.y }
     let x_hi = if a_hi.x < b_hi.x { a_hi.x } else { b_hi.x }
     let x_lo = if a_lo.x > b_lo.x { a_lo.x } else { b_lo.x }
-    let cx = (x_hi + x_lo) / 2.0
-    Manifold::new(Vec2::new(0.0, ny), oy, Vec2::new(cx, contact_y))
+    let c1 = Vec2::new(x_lo, contact_y)
+    let c2 = Vec2::new(x_hi, contact_y)
+    Manifold::new2(Vec2::new(0.0, ny), oy, c1, c2)
   }
 }
 

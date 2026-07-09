@@ -726,3 +726,249 @@ test "world/stacking_rest" {
   assert_true(top.position.y < 10.0)
   assert_true(top.position.y > 0.0)
 }
+
+// ---------------------------------------------------------------------------
+// Joints
+// ---------------------------------------------------------------------------
+
+///|
+test "joint/distance_pendulum" {
+  // Two bodies connected by a distance joint: a static anchor and a dynamic
+  // bob. The bob should swing but stay roughly at the rest length.
+  let w = @mooncollider.World::new()
+  let _anchor = w.add_body(
+    @mooncollider.BodyDef::static_(
+      @mooncollider.Vec2::new(0.0, 5.0),
+      @mooncollider.Shape::from_circle(
+        @mooncollider.Circle::new(@mooncollider.Vec2::zero(), 0.1),
+      ),
+    ),
+  )
+  let _bob = w.add_body(
+    @mooncollider.BodyDef::dynamic(
+      @mooncollider.Vec2::new(3.0, 5.0),
+      @mooncollider.Shape::from_circle(
+        @mooncollider.Circle::new(@mooncollider.Vec2::zero(), 0.3),
+      ),
+      1.0,
+      0.0,
+    ),
+  )
+  let dj = @mooncollider.DistanceJoint::from_world(
+    w,
+    0,
+    1,
+    @mooncollider.Vec2::new(0.0, 5.0),
+    @mooncollider.Vec2::new(3.0, 5.0),
+  )
+  w.add_joint(@mooncollider.Joint::distance(dj))
+  let mut i = 0
+  while i < 200 {
+    w.step(0.016)
+    i = i + 1
+  }
+  // The bob should not have drifted far from the rest length (3.0).
+  let bob = w.body(1)
+  let dist = bob.position.sub(@mooncollider.Vec2::new(0.0, 5.0)).length()
+  assert_true((dist - 3.0).abs() < 2.0)
+}
+
+///|
+test "joint/revolute_pin" {
+  // A dynamic body pinned to a static anchor should orbit around the anchor
+  // rather than fly off.
+  let w = @mooncollider.World::new()
+  let _ = w.add_body(
+    @mooncollider.BodyDef::static_(
+      @mooncollider.Vec2::new(0.0, 0.0),
+      @mooncollider.Shape::from_circle(
+        @mooncollider.Circle::new(@mooncollider.Vec2::zero(), 0.1),
+      ),
+    ),
+  )
+  let _ = w.add_body(
+    @mooncollider.BodyDef::dynamic(
+      @mooncollider.Vec2::new(2.0, 0.0),
+      @mooncollider.Shape::from_aabb(
+        @mooncollider.AABB::new(
+          @mooncollider.Vec2::zero(),
+          @mooncollider.Vec2::new(0.5, 0.5),
+        ),
+      ),
+      1.0,
+      0.0,
+    ),
+  )
+  let rj = @mooncollider.RevoluteJoint::from_world(
+    w,
+    0,
+    1,
+    @mooncollider.Vec2::new(0.0, 0.0),
+  )
+  w.add_joint(@mooncollider.Joint::revolute(rj))
+  let mut i = 0
+  while i < 200 {
+    w.step(0.016)
+    i = i + 1
+  }
+  let body = w.body(1)
+  let dist = body.position.length()
+  // Should stay near the initial 2.0 radius.
+  assert_true(dist < 3.0)
+  assert_true(dist > 1.0)
+}
+
+// ---------------------------------------------------------------------------
+// AABBTree remove / update
+// ---------------------------------------------------------------------------
+
+///|
+test "aabmtree/remove_and_update" {
+  let tree = @mooncollider.AABBTree::new()
+  let l0 = tree.insert(
+    0,
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(0.0, 0.0),
+      @mooncollider.Vec2::new(1.0, 1.0),
+    ),
+  )
+  let _ = tree.insert(
+    1,
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(0.5, 0.5),
+      @mooncollider.Vec2::new(1.5, 1.5),
+    ),
+  )
+  let pairs_before = tree.pairs()
+  assert_eq(pairs_before.length(), 1)
+  // Remove body 0; no pairs should remain.
+  tree.remove(l0)
+  let pairs_after = tree.pairs()
+  assert_eq(pairs_after.length(), 0)
+}
+
+// ---------------------------------------------------------------------------
+// CCD
+// ---------------------------------------------------------------------------
+
+///|
+test "ccd/circle_vs_circle_hit" {
+  // A fast circle sweeping toward a static circle should detect the hit.
+  let s = @mooncollider.ccd_sweep_circle(
+    0.5,
+    @mooncollider.Vec2::new(0.0, 0.0),
+    @mooncollider.Vec2::new(10.0, 0.0),
+    @mooncollider.Shape::from_circle(
+      @mooncollider.Circle::new(@mooncollider.Vec2::new(5.0, 0.0), 0.5),
+    ),
+  )
+  assert_true(s.hit)
+  assert_true(s.t < 1.0)
+}
+
+///|
+test "ccd/circle_vs_circle_miss" {
+  let s = @mooncollider.ccd_sweep_circle(
+    0.5,
+    @mooncollider.Vec2::new(0.0, 0.0),
+    @mooncollider.Vec2::new(10.0, 0.0),
+    @mooncollider.Shape::from_circle(
+      @mooncollider.Circle::new(@mooncollider.Vec2::new(5.0, 10.0), 0.5),
+    ),
+  )
+  assert_false(s.hit)
+}
+
+///|
+test "ccd/aabb_vs_aabb_hit" {
+  let s = @mooncollider.ccd_sweep_aabb(
+    @mooncollider.Vec2::new(0.5, 0.5),
+    @mooncollider.Vec2::new(0.0, 0.0),
+    @mooncollider.Vec2::new(10.0, 0.0),
+    @mooncollider.Shape::from_aabb(
+      @mooncollider.AABB::from_min_max(
+        @mooncollider.Vec2::new(5.0, -1.0),
+        @mooncollider.Vec2::new(6.0, 1.0),
+      ),
+    ),
+  )
+  assert_true(s.hit)
+  assert_true(s.t < 1.0)
+}
+
+///|
+test "ccd/circle_vs_polygon_hit" {
+  let s = @mooncollider.ccd_sweep_circle(
+    0.5,
+    @mooncollider.Vec2::new(0.0, 0.0),
+    @mooncollider.Vec2::new(10.0, 0.0),
+    @mooncollider.Shape::from_polygon(
+      @mooncollider.Polygon::box(
+        @mooncollider.Vec2::new(5.0, -1.0),
+        @mooncollider.Vec2::new(6.0, 1.0),
+      ),
+    ),
+  )
+  assert_true(s.hit)
+  assert_true(s.t < 1.0)
+}
+
+// ---------------------------------------------------------------------------
+// Solver stability (iteration count matters)
+// ---------------------------------------------------------------------------
+
+///|
+test "world/stacking_more_iterations_stabler" {
+  // A taller stack with more iterations should settle with less residual
+  // velocity than with a single iteration.
+  let run = fn(iters : Int) -> Double {
+    let w = @mooncollider.World::new()
+    w.velocity_iterations = iters
+    let _ = w.add_body(
+      @mooncollider.BodyDef::static_(
+        @mooncollider.Vec2::new(0.0, 0.0),
+        @mooncollider.Shape::from_aabb(
+          @mooncollider.AABB::from_min_max(
+            @mooncollider.Vec2::new(-20.0, -1.0),
+            @mooncollider.Vec2::new(20.0, 0.0),
+          ),
+        ),
+      ),
+    )
+    let mut i = 0
+    while i < 4 {
+      let def = @mooncollider.BodyDef::dynamic(
+        @mooncollider.Vec2::new(0.0, 1.0 + i.to_double() * 1.05),
+        @mooncollider.Shape::from_aabb(
+          @mooncollider.AABB::new(
+            @mooncollider.Vec2::zero(),
+            @mooncollider.Vec2::new(0.5, 0.5),
+          ),
+        ),
+        1.0,
+        0.0,
+      )
+      def.friction = 0.6
+      let _ = w.add_body(def)
+      i = i + 1
+    }
+    let mut step = 0
+    while step < 200 {
+      w.step(0.016)
+      step = step + 1
+    }
+    // Total kinetic energy of all dynamic bodies.
+    let mut energy = 0.0
+    let mut j = 1
+    while j < 5 {
+      let b = w.body(j)
+      energy += 0.5 * b.mass * b.velocity.length_sq()
+      j = j + 1
+    }
+    energy
+  }
+  let e_high = run(16)
+  let e_low = run(1)
+  // More iterations -> less residual energy (more settled).
+  assert_true(e_high <= e_low + 1.0e-6)
+}

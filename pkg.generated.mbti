@@ -6,6 +6,10 @@ import {
 }
 
 // Values
+pub fn ccd_sweep_aabb(Vec2, Vec2, Vec2, Shape) -> CCDSweep
+
+pub fn ccd_sweep_circle(Double, Vec2, Vec2, Shape) -> CCDSweep
+
 pub fn collide(Shape, Shape) -> Manifold
 
 pub fn collide_aabb_aabb(AABB, AABB) -> Manifold
@@ -60,7 +64,9 @@ pub(all) struct AABBTree {
 pub fn AABBTree::insert(Self, Int, AABB) -> Int
 pub fn AABBTree::new() -> Self
 pub fn AABBTree::pairs(Self) -> Array[(Int, Int)]
+pub fn AABBTree::remove(Self, Int) -> Unit
 pub fn AABBTree::size(Self) -> Int
+pub fn AABBTree::update(Self, Int, AABB) -> Unit
 
 pub(all) struct BodyDef {
   mut body_type : BodyType
@@ -82,6 +88,14 @@ pub enum BodyType {
   Dynamic
 }
 
+pub(all) struct CCDSweep {
+  t : Double
+  point : Vec2
+  normal : Vec2
+  hit : Bool
+}
+pub fn CCDSweep::miss() -> Self
+
 pub(all) struct CellKey {
   cx : Int
   cy : Int
@@ -94,6 +108,16 @@ pub(all) struct Circle {
 pub fn Circle::contains(Self, Vec2) -> Bool
 pub fn Circle::new(Vec2, Double) -> Self
 
+pub(all) struct DistanceJoint {
+  a : Int
+  b : Int
+  local_anchor_a : Vec2
+  local_anchor_b : Vec2
+  length : Double
+  stiffness : Double
+}
+pub fn DistanceJoint::from_world(World, Int, Int, Vec2, Vec2, length? : Double) -> Self
+
 pub(all) struct GridHash {
   cell_size : Double
   mut cells : Map[CellKey, Array[Int]]
@@ -103,13 +127,25 @@ pub fn GridHash::insert(Self, Int, AABB) -> Unit
 pub fn GridHash::new(Double) -> Self
 pub fn GridHash::pairs(Self) -> Array[(Int, Int)]
 
+pub enum Joint {
+  Distance(DistanceJoint)
+  Revolute(RevoluteJoint)
+  Weld(WeldJoint)
+}
+pub fn Joint::distance(DistanceJoint) -> Self
+pub fn Joint::revolute(RevoluteJoint) -> Self
+pub fn Joint::weld(WeldJoint) -> Self
+
 pub(all) struct Manifold {
   normal : Vec2
   depth : Double
   contact : Vec2
+  contact2 : Vec2
 } derive(Eq, @debug.Debug)
 pub fn Manifold::colliding(Self) -> Bool
+pub fn Manifold::has_second_contact(Self) -> Bool
 pub fn Manifold::new(Vec2, Double, Vec2) -> Self
+pub fn Manifold::new2(Vec2, Double, Vec2, Vec2) -> Self
 pub fn Manifold::none() -> Self
 
 pub(all) struct Polygon {
@@ -149,6 +185,14 @@ pub(all) struct RaycastHit {
 } derive(Eq, @debug.Debug)
 pub fn RaycastHit::hit(Self) -> Bool
 pub fn RaycastHit::new(Double, Vec2, Vec2) -> Self
+
+pub(all) struct RevoluteJoint {
+  a : Int
+  b : Int
+  local_anchor_a : Vec2
+  local_anchor_b : Vec2
+}
+pub fn RevoluteJoint::from_world(World, Int, Int, Vec2) -> Self
 
 pub(all) struct RigidBody {
   id : Int
@@ -227,17 +271,29 @@ pub fn Vec2::unit_x() -> Self
 pub fn Vec2::unit_y() -> Self
 pub fn Vec2::zero() -> Self
 
+pub(all) struct WeldJoint {
+  a : Int
+  b : Int
+  local_anchor_a : Vec2
+  local_anchor_b : Vec2
+  ref_angle : Double
+}
+pub fn WeldJoint::from_world(World, Int, Int, Vec2) -> Self
+
 pub(all) struct World {
   mut gravity : Vec2
   bodies : Array[RigidBody]
+  joints : Array[Joint]
   mut grid_cell_size : Double
-  velocity_iterations : Int
+  mut velocity_iterations : Int
   position_correction : Double
   slop : Double
 }
 pub fn World::add_body(Self, BodyDef) -> Int
+pub fn World::add_joint(Self, Joint) -> Unit
 pub fn World::body(Self, Int) -> RigidBody
 pub fn World::body_count(Self) -> Int
+pub fn World::joint_count(Self) -> Int
 pub fn World::new() -> Self
 pub fn World::set_gravity(Self, Vec2) -> Unit
 pub fn World::set_grid_cell_size(Self, Double) -> Unit

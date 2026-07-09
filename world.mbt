@@ -6,11 +6,13 @@ pub(all) struct World {
   mut gravity : Vec2
   /// All bodies, indexed by body id (which equals array position).
   bodies : Array[RigidBody]
+  /// Persistent joint constraints, solved each step.
+  joints : Array[Joint]
   /// Broadphase grid cell size. Bodies larger than this still work but may
   /// be reported in many cells.
   mut grid_cell_size : Double
   /// Velocity iterations for constraint solving.
-  velocity_iterations : Int
+  mut velocity_iterations : Int
   /// Position correction factor (Baumgarte). 0 = none, ~0.2 typical.
   position_correction : Double
   /// Slop: allowed penetration to avoid jitter.
@@ -23,6 +25,7 @@ pub fn World::new() -> World {
   {
     gravity: Vec2::new(0.0, -9.81),
     bodies: [],
+    joints: [],
     grid_cell_size: 2.0,
     velocity_iterations: 8,
     position_correction: 0.2,
@@ -64,6 +67,18 @@ pub fn World::body_count(self : World) -> Int {
 }
 
 ///|
+/// Add a joint to the world.
+pub fn World::add_joint(self : World, joint : Joint) -> Unit {
+  self.joints.push(joint)
+}
+
+///|
+/// Number of joints.
+pub fn World::joint_count(self : World) -> Int {
+  self.joints.length()
+}
+
+///|
 /// Advance the simulation by `dt` seconds.
 pub fn World::step(self : World, dt : Double) -> Unit {
   if dt <= 0.0 {
@@ -89,7 +104,47 @@ pub fn World::step(self : World, dt : Double) -> Unit {
     b.force = Vec2::zero()
     b.torque = 0.0
   }
-  // 2. Integrate velocities -> positions.
+  // 2. Broadphase.
+  let grid = GridHash::new(self.grid_cell_size)
+  for i = 0; i < self.bodies.length(); i = i + 1 {
+    grid.insert(i, self.bodies[i].aabb)
+  }
+  let pairs = grid.pairs()
+  // 3. Narrowphase: build contact constraints.
+  let contacts : Array[Contact] = []
+  for k = 0; k < pairs.length(); k = k + 1 {
+    let (a_id, b_id) = pairs[k]
+    let a = self.bodies[a_id]
+    let b = self.bodies[b_id]
+    let sa = a.world_shape()
+    let sb = b.world_shape()
+    let m = collide(sa, sb)
+    if m.colliding() {
+      contacts.push(make_contact(a, b, m, m.contact))
+      if m.has_second_contact() {
+        contacts.push(make_contact(a, b, m, m.contact2))
+      }
+    }
+  }
+  // 4. Sequential-impulse velocity solving: iterate `velocity_iterations`
+  //    times, applying normal + friction impulses to each contact. Multiple
+  //    iterations propagate constraints through contact islands and
+  //    dramatically improve stacking stability.
+  let iters = if self.velocity_iterations > 0 {
+    self.velocity_iterations
+  } else {
+    1
+  }
+  for _iter = 0; _iter < iters; _iter = _iter + 1 {
+    for ci = 0; ci < contacts.length(); ci = ci + 1 {
+      self.solve_contact(contacts[ci])
+    }
+    // Solve joint constraints alongside contacts.
+    for ji = 0; ji < self.joints.length(); ji = ji + 1 {
+      solve_joint(self.joints[ji], self.bodies)
+    }
+  }
+  // 5. Integrate velocities -> positions.
   for i = 0; i < self.bodies.length(); i = i + 1 {
     let b = self.bodies[i]
     if b.is_static() {
@@ -99,48 +154,57 @@ pub fn World::step(self : World, dt : Double) -> Unit {
     b.angle = b.angle + b.angular_velocity * dt
     b.update_aabb()
   }
-  // 3. Broadphase.
-  let grid = GridHash::new(self.grid_cell_size)
-  for i = 0; i < self.bodies.length(); i = i + 1 {
-    grid.insert(i, self.bodies[i].aabb)
-  }
-  let pairs = grid.pairs()
-  // 4. Narrowphase + resolve.
-  for k = 0; k < pairs.length(); k = k + 1 {
-    let (a_id, b_id) = pairs[k]
-    let a = self.bodies[a_id]
-    let b = self.bodies[b_id]
-    let sa = a.world_shape()
-    let sb = b.world_shape()
-    let m = collide(sa, sb)
-    if m.colliding() {
-      self.resolve(a, b, m)
-    }
+  // 6. Positional correction (Baumgarte) — applied after integration so the
+  //    solver's velocity work isn't undone.
+  for ci = 0; ci < contacts.length(); ci = ci + 1 {
+    self.positional_correct_contact(contacts[ci])
   }
 }
 
 ///|
-/// Resolve a collision between two bodies given a manifold (normal from a
-/// to b).
-fn World::resolve(
-  self : World,
+/// Build a contact constraint from a manifold and a specific contact point.
+fn make_contact(
   a : RigidBody,
   b : RigidBody,
   m : Manifold,
-) -> Unit {
-  // Positional correction (Baumgarte) to reduce sinking.
-  let correction = self.positional_correction(a, b, m.normal, m.depth)
-  if !a.is_static() {
-    a.position = a.position.sub(correction.scale(a.inv_mass))
-    a.update_aabb()
+  point : Vec2,
+) -> Contact {
+  {
+    a,
+    b,
+    normal: m.normal,
+    depth: m.depth,
+    contact_point: point,
+    restitution: if a.restitution < b.restitution {
+      a.restitution
+    } else {
+      b.restitution
+    },
+    friction: (a.friction * a.friction + b.friction * b.friction).sqrt(),
   }
-  if !b.is_static() {
-    b.position = b.position.add(correction.scale(b.inv_mass))
-    b.update_aabb()
-  }
-  // Velocity resolution.
-  let ra = m.contact.sub(a.position)
-  let rb = m.contact.sub(b.position)
+}
+
+///|
+/// A resolved contact constraint used by the sequential-impulse solver.
+priv struct Contact {
+  a : RigidBody
+  b : RigidBody
+  normal : Vec2
+  depth : Double
+  contact_point : Vec2
+  restitution : Double
+  friction : Double
+}
+
+///|
+/// One velocity-solving iteration for a single contact: normal impulse then
+/// Coulomb friction impulse.
+fn World::solve_contact(self : World, c : Contact) -> Unit {
+  ignore(self)
+  let a = c.a
+  let b = c.b
+  let ra = c.contact_point.sub(a.position)
+  let rb = c.contact_point.sub(b.position)
   // Relative velocity at contact.
   let va = a.velocity.add(
     Vec2::new(-a.angular_velocity * ra.y, a.angular_velocity * ra.x),
@@ -149,18 +213,13 @@ fn World::resolve(
     Vec2::new(-b.angular_velocity * rb.y, b.angular_velocity * rb.x),
   )
   let rv = vb.sub(va)
-  let vel_along_normal = rv.dot(m.normal)
-  // Do not resolve if bodies are separating.
+  let vel_along_normal = rv.dot(c.normal)
+  // Only resolve approaching contacts.
   if vel_along_normal > 0.0 {
     return
   }
-  let e = if a.restitution < b.restitution {
-    a.restitution
-  } else {
-    b.restitution
-  }
-  let ra_cross_n = ra.cross(m.normal)
-  let rb_cross_n = rb.cross(m.normal)
+  let ra_cross_n = ra.cross(c.normal)
+  let rb_cross_n = rb.cross(c.normal)
   let inv_mass_sum = a.inv_mass +
     b.inv_mass +
     ra_cross_n * ra_cross_n * a.inv_inertia +
@@ -168,8 +227,8 @@ fn World::resolve(
   if inv_mass_sum == 0.0 {
     return
   }
-  let j = -(1.0 + e) * vel_along_normal / inv_mass_sum
-  let impulse = m.normal.scale(j)
+  let j = -(1.0 + c.restitution) * vel_along_normal / inv_mass_sum
+  let impulse = c.normal.scale(j)
   if !a.is_static() {
     a.velocity = a.velocity.sub(impulse.scale(a.inv_mass))
     a.angular_velocity = a.angular_velocity - ra.cross(impulse) * a.inv_inertia
@@ -178,8 +237,7 @@ fn World::resolve(
     b.velocity = b.velocity.add(impulse.scale(b.inv_mass))
     b.angular_velocity = b.angular_velocity + rb.cross(impulse) * b.inv_inertia
   }
-  // --- Friction (Coulomb model): tangential impulse, clamped by mu * |j|. ---
-  // Recompute relative velocity after the normal impulse.
+  // --- Friction (Coulomb): tangential impulse clamped by mu * |j|. ---
   let va2 = a.velocity.add(
     Vec2::new(-a.angular_velocity * ra.y, a.angular_velocity * ra.x),
   )
@@ -187,11 +245,14 @@ fn World::resolve(
     Vec2::new(-b.angular_velocity * rb.y, b.angular_velocity * rb.x),
   )
   let rv2 = vb2.sub(va2)
-  // Tangent direction (perpendicular to normal), in the direction of the
-  // tangential relative velocity.
-  let tangent = rv2.sub(m.normal.scale(rv2.dot(m.normal))).normalize()
-  let ra_cross_t = ra.cross(tangent)
-  let rb_cross_t = rb.cross(tangent)
+  let tangent = rv2.sub(c.normal.scale(rv2.dot(c.normal)))
+  let tangent_len = tangent.length()
+  if tangent_len < 1.0e-9 {
+    return
+  }
+  let tangent_dir = tangent.scale(1.0 / tangent_len)
+  let ra_cross_t = ra.cross(tangent_dir)
+  let rb_cross_t = rb.cross(tangent_dir)
   let inv_mass_sum_t = a.inv_mass +
     b.inv_mass +
     ra_cross_t * ra_cross_t * a.inv_inertia +
@@ -199,13 +260,13 @@ fn World::resolve(
   if inv_mass_sum_t == 0.0 {
     return
   }
-  let mut jt = -rv2.dot(tangent) / inv_mass_sum_t
-  // Coulomb friction clamp.
-  let mu = (a.friction * a.friction + b.friction * b.friction).sqrt()
-  if jt.abs() > j * mu {
-    jt = if jt > 0.0 { j * mu } else { -j * mu }
+  let mut jt = -rv2.dot(tangent_dir) / inv_mass_sum_t
+  // Coulomb clamp.
+  let max_friction = j.abs() * c.friction
+  if jt.abs() > max_friction {
+    jt = if jt > 0.0 { max_friction } else { -max_friction }
   }
-  let friction_impulse = tangent.scale(jt)
+  let friction_impulse = tangent_dir.scale(jt)
   if !a.is_static() {
     a.velocity = a.velocity.sub(friction_impulse.scale(a.inv_mass))
     a.angular_velocity = a.angular_velocity -
@@ -219,20 +280,22 @@ fn World::resolve(
 }
 
 ///|
-/// Baumgarte positional correction.
-fn World::positional_correction(
-  self : World,
-  a : RigidBody,
-  b : RigidBody,
-  normal : Vec2,
-  depth : Double,
-) -> Vec2 {
-  let inv_sum = a.inv_mass + b.inv_mass
+/// Baumgarte positional correction for a contact.
+fn World::positional_correct_contact(self : World, c : Contact) -> Unit {
+  let inv_sum = c.a.inv_mass + c.b.inv_mass
   if inv_sum == 0.0 {
-    return Vec2::zero()
+    return
   }
-  let percent = self.position_correction
-  let slop = self.slop
-  let correction = (depth - slop).max(0.0) / inv_sum * percent
-  normal.scale(correction)
+  let correction = (c.depth - self.slop).max(0.0) /
+    inv_sum *
+    self.position_correction
+  let delta = c.normal.scale(correction)
+  if !c.a.is_static() {
+    c.a.position = c.a.position.sub(delta.scale(c.a.inv_mass))
+    c.a.update_aabb()
+  }
+  if !c.b.is_static() {
+    c.b.position = c.b.position.add(delta.scale(c.b.inv_mass))
+    c.b.update_aabb()
+  }
 }

@@ -6,6 +6,8 @@
 ///|
 struct WorldHolder {
   mut w : @mooncollider.World
+  mut drag_id : Int // -1 = not dragging
+  mut drag_target : @mooncollider.Vec2
 }
 
 ///|
@@ -13,7 +15,11 @@ let holder : WorldHolder = WorldHolder::new()
 
 ///|
 fn WorldHolder::new() -> WorldHolder {
-  { w: @mooncollider.World::new() }
+  {
+    w: @mooncollider.World::new(),
+    drag_id: -1,
+    drag_target: @mooncollider.Vec2::zero(),
+  }
 }
 
 ///|
@@ -71,8 +77,21 @@ extern "js" fn js_wrap3idu(f : (Int, Double, Double) -> Unit) -> JSRef =
   #|(f) => (a, b, c) => f(a, b, c)
 
 ///|
+extern "js" fn js_wrap2di(f : (Double, Double) -> Int) -> JSRef =
+  #|(f) => (a, b) => f(a, b)
+
+///|
+extern "js" fn js_wrap1i(f : (Int) -> Unit) -> JSRef =
+  #|(f) => (a) => f(a)
+
+///|
+extern "js" fn js_wrap2d1i(f : (Int, Double, Double) -> Unit) -> JSRef =
+  #|(f) => (a, b, c) => f(a, b, c)
+
+///|
 fn web_init() -> Unit {
   holder.w = @mooncollider.World::new()
+  holder.drag_id = -1
 }
 
 ///|
@@ -129,6 +148,20 @@ fn web_add_wall(x : Double, y : Double, hw : Double, hh : Double) -> Int {
 
 ///|
 fn web_step(dt : Double) -> Unit {
+  // Apply spring force for active drag (mouse joint)
+  if holder.drag_id >= 0 {
+    let b = holder.w.body(holder.drag_id)
+    if not(b.is_static()) {
+      let dx = holder.drag_target.x - b.position.x
+      let dy = holder.drag_target.y - b.position.y
+      // spring: F = k * displacement - c * velocity
+      let k = 40.0 * b.mass
+      let c = 10.0 * b.mass
+      let fx = k * dx - c * b.velocity.x
+      let fy = k * dy - c * b.velocity.y
+      b.apply_force(@mooncollider.Vec2::new(fx, fy))
+    }
+  }
   holder.w.step(dt)
 }
 
@@ -225,6 +258,53 @@ fn web_remove_body(id : Int) -> Unit {
 }
 
 ///|
+fn web_pick_body(x : Double, y : Double) -> Int {
+  // Returns the topmost dynamic body containing (x,y), or -1.
+  let n = holder.w.body_count()
+  let mut found = -1
+  for i = 0; i < n; i = i + 1 {
+    let b = holder.w.body(i)
+    if b.is_static() {
+      continue
+    }
+    let s = b.world_shape()
+    match s {
+      @mooncollider.Shape::Circle(c) =>
+        if c.contains(@mooncollider.Vec2::new(x, y)) {
+          found = i
+        }
+      @mooncollider.Shape::AABB(a) =>
+        if a.contains(@mooncollider.Vec2::new(x, y)) {
+          found = i
+        }
+      _ => {
+        let aabb = s.aabb()
+        if aabb.contains(@mooncollider.Vec2::new(x, y)) {
+          found = i
+        }
+      }
+    }
+  }
+  found
+}
+
+///|
+fn web_drag_start(id : Int, x : Double, y : Double) -> Unit {
+  holder.drag_id = id
+  holder.drag_target = @mooncollider.Vec2::new(x, y)
+}
+
+///|
+fn web_drag_to(x : Double, y : Double) -> Unit {
+  holder.drag_target = @mooncollider.Vec2::new(x, y)
+}
+
+///|
+fn web_drop() -> Unit {
+  holder.drag_id = -1
+}
+
+///|
 fn register_all() -> Unit {
   let g = js_global("MoonCollider")
   js_set(g, "web_init", js_wrap0(web_init))
@@ -246,6 +326,10 @@ fn register_all() -> Unit {
   js_set(g, "web_set_gravity", js_wrap2du(web_set_gravity))
   js_set(g, "web_apply_impulse", js_wrap3idu(web_apply_impulse))
   js_set(g, "web_remove_body", js_wrapiu(web_remove_body))
+  js_set(g, "web_pick_body", js_wrap2di(web_pick_body))
+  js_set(g, "web_drag_start", js_wrap3idu(web_drag_start))
+  js_set(g, "web_drag_to", js_wrap2du(web_drag_to))
+  js_set(g, "web_drop", js_wrap0(web_drop))
 }
 
 ///|

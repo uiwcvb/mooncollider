@@ -161,7 +161,7 @@ footer a{color:var(--accent)}
       </div>
     </div>
     <canvas id="sandbox"></canvas>
-    <div class="sandbox-hint">点击/触摸添加物体 · 切换球/箱 · 开关重力 · 右上角显示真实 body 数量</div>
+    <div class="sandbox-hint">拖拽物体抛掷 · 点击空白添加球/箱 · 切换模式 · 开关重力</div>
   </div>
 </div>
 
@@ -525,10 +525,23 @@ moon add bubuki/mooncollider</code></pre>
         ctx.restore();
       }
     }
+    // drag indicator line
+    if(dragging && dragId >= 0){
+      const bx = toCanvasX(MC.web_get_x(dragId));
+      const by = toCanvasY(MC.web_get_y(dragId));
+      ctx.strokeStyle='rgba(88,166,255,0.5)';
+      ctx.lineWidth=2;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(mouseX, mouseY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
     // body count
     ctx.fillStyle='#8b949e';
     ctx.font='12px monospace';
-    ctx.fillText(`bodies: ${MC.web_body_count()}  (real MoonCollider wasm-js)`, 12, 20);
+    ctx.fillText(`bodies: ${MC.web_body_count()}  (real MoonCollider · 拖拽物体试试)`, 12, 20);
   }
 
   let last = performance.now();
@@ -542,23 +555,72 @@ moon add bubuki/mooncollider</code></pre>
   }
   requestAnimationFrame(loop);
 
-  // interaction
+  // interaction: drag existing body, or add new one if missed
+  let dragging = false;
+  let dragId = -1;
+  let mouseX = 0, mouseY = 0; // canvas-space for drag line
+
+  function pointerDown(cx, cy){
+    const wx = toWorldX(cx);
+    const wy = toWorldY(cy);
+    const picked = MC.web_pick_body(wx, wy);
+    if(picked >= 0){
+      dragging = true;
+      dragId = picked;
+      MC.web_drag_start(picked, wx, wy);
+      canvas.style.cursor = 'grabbing';
+    } else {
+      // empty space — add new body
+      if(mode === 'ball') addBall(wx, wy);
+      else addBox(wx, wy);
+    }
+  }
+  function pointerMove(cx, cy){
+    mouseX = cx; mouseY = cy;
+    if(dragging){
+      const wx = toWorldX(cx);
+      const wy = toWorldY(cy);
+      MC.web_drag_to(wx, wy);
+    } else {
+      // hover cursor
+      const wx = toWorldX(cx);
+      const wy = toWorldY(cy);
+      canvas.style.cursor = MC.web_pick_body(wx, wy) >= 0 ? 'grab' : 'crosshair';
+    }
+  }
+  function pointerUp(){
+    if(dragging){
+      MC.web_drop();
+      dragging = false;
+      dragId = -1;
+      canvas.style.cursor = 'crosshair';
+    }
+  }
+
   canvas.addEventListener('mousedown', e => {
     const r = canvas.getBoundingClientRect();
-    const wx = toWorldX(e.clientX - r.left);
-    const wy = toWorldY(e.clientY - r.top);
-    if(mode === 'ball') addBall(wx, wy);
-    else addBox(wx, wy);
+    pointerDown(e.clientX - r.left, e.clientY - r.top);
   });
+  canvas.addEventListener('mousemove', e => {
+    const r = canvas.getBoundingClientRect();
+    pointerMove(e.clientX - r.left, e.clientY - r.top);
+  });
+  canvas.addEventListener('mouseup', pointerUp);
+  canvas.addEventListener('mouseleave', pointerUp);
+
   canvas.addEventListener('touchstart', e => {
     e.preventDefault();
     const t = e.touches[0];
     const r = canvas.getBoundingClientRect();
-    const wx = toWorldX(t.clientX - r.left);
-    const wy = toWorldY(t.clientY - r.top);
-    if(mode === 'ball') addBall(wx, wy);
-    else addBox(wx, wy);
+    pointerDown(t.clientX - r.left, t.clientY - r.top);
   }, {passive:false});
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    const r = canvas.getBoundingClientRect();
+    pointerMove(t.clientX - r.left, t.clientY - r.top);
+  }, {passive:false});
+  canvas.addEventListener('touchend', pointerUp);
 
   // buttons
   function setMode(m){

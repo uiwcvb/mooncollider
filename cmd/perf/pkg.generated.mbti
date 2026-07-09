@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "bubuki/mooncollider/cmd/bench"
+package "bubuki/mooncollider/cmd/perf"
 
 // Values
 

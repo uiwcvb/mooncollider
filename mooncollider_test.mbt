@@ -972,3 +972,99 @@ test "world/stacking_more_iterations_stabler" {
   // More iterations -> less residual energy (more settled).
   assert_true(e_high <= e_low + 1.0e-6)
 }
+
+// ---------------------------------------------------------------------------
+// Determinism: snapshot of a 500-step stacking sim
+// ---------------------------------------------------------------------------
+
+///|
+test "determinism/stacking_snapshot" {
+  // Fixed setup, fixed steps. The resulting body positions must be identical
+  // across every MoonBit target (wasm-gc, js, native) — proving the library
+  // has no floating-point nondeterminism.
+  let w = @mooncollider.World::new()
+  let _ = w.add_body(
+    @mooncollider.BodyDef::static_(
+      @mooncollider.Vec2::new(0.0, 0.0),
+      @mooncollider.Shape::from_aabb(
+        @mooncollider.AABB::from_min_max(
+          @mooncollider.Vec2::new(-10.0, -1.0),
+          @mooncollider.Vec2::new(10.0, 0.0),
+        ),
+      ),
+    ),
+  )
+  let mut i = 0
+  while i < 3 {
+    let def = @mooncollider.BodyDef::dynamic(
+      @mooncollider.Vec2::new(0.0, 1.0 + i.to_double() * 1.05),
+      @mooncollider.Shape::from_aabb(
+        @mooncollider.AABB::new(
+          @mooncollider.Vec2::zero(),
+          @mooncollider.Vec2::new(0.5, 0.5),
+        ),
+      ),
+      1.0,
+      0.0,
+    )
+    def.friction = 0.6
+    let _ = w.add_body(def)
+    i = i + 1
+  }
+  let mut step = 0
+  while step < 500 {
+    w.step(0.016)
+    step = step + 1
+  }
+  // Snapshot all 4 bodies' positions (floor + 3 boxes) to 6 decimal places.
+  let snap = @debug.to_string(w.body(0).position) +
+    @debug.to_string(w.body(1).position) +
+    @debug.to_string(w.body(2).position) +
+    @debug.to_string(w.body(3).position)
+  inspect(
+    snap,
+    content=(
+      #|{ x: 0, y: 0 }{ x: 0.02270076257216061, y: 0.486213083232441 }{ x: -0.06361493865846218, y: 1.4702608458456554 }{ x: -0.255789502694509, y: 2.4568940035999653 }
+    ),
+  )
+}
+
+///|
+test "determinism/bounce_snapshot" {
+  // A bouncing ball snapshot — sensitive to integration order and float ops.
+  let w = @mooncollider.World::new()
+  let _ = w.add_body(
+    @mooncollider.BodyDef::dynamic(
+      @mooncollider.Vec2::new(0.0, 10.0),
+      @mooncollider.Shape::from_circle(
+        @mooncollider.Circle::new(@mooncollider.Vec2::zero(), 0.5),
+      ),
+      1.0,
+      0.8,
+    ),
+  )
+  let _ = w.add_body(
+    @mooncollider.BodyDef::static_(
+      @mooncollider.Vec2::new(0.0, 0.0),
+      @mooncollider.Shape::from_aabb(
+        @mooncollider.AABB::from_min_max(
+          @mooncollider.Vec2::new(-10.0, -1.0),
+          @mooncollider.Vec2::new(10.0, 0.0),
+        ),
+      ),
+    ),
+  )
+  let mut step = 0
+  while step < 300 {
+    w.step(0.016)
+    step = step + 1
+  }
+  let snap = @debug.to_string(w.body(0).position) +
+    @debug.to_string(w.body(0).velocity)
+  inspect(
+    snap,
+    content=(
+      #|{ x: 0, y: 0.4899999999999999 }{ x: 0, y: 0 }
+    ),
+  )
+}

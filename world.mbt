@@ -83,6 +83,8 @@ pub fn World::step(self : World, dt : Double) -> Unit {
     // Damping.
     let damp = (1.0 - b.linear_damping * dt).max(0.0)
     b.velocity = b.velocity.scale(damp)
+    let adamp = (1.0 - b.angular_damping * dt).max(0.0)
+    b.angular_velocity = b.angular_velocity * adamp
     // Clear accumulators.
     b.force = Vec2::zero()
     b.torque = 0.0
@@ -175,6 +177,44 @@ fn World::resolve(
   if !b.is_static() {
     b.velocity = b.velocity.add(impulse.scale(b.inv_mass))
     b.angular_velocity = b.angular_velocity + rb.cross(impulse) * b.inv_inertia
+  }
+  // --- Friction (Coulomb model): tangential impulse, clamped by mu * |j|. ---
+  // Recompute relative velocity after the normal impulse.
+  let va2 = a.velocity.add(
+    Vec2::new(-a.angular_velocity * ra.y, a.angular_velocity * ra.x),
+  )
+  let vb2 = b.velocity.add(
+    Vec2::new(-b.angular_velocity * rb.y, b.angular_velocity * rb.x),
+  )
+  let rv2 = vb2.sub(va2)
+  // Tangent direction (perpendicular to normal), in the direction of the
+  // tangential relative velocity.
+  let tangent = rv2.sub(m.normal.scale(rv2.dot(m.normal))).normalize()
+  let ra_cross_t = ra.cross(tangent)
+  let rb_cross_t = rb.cross(tangent)
+  let inv_mass_sum_t = a.inv_mass +
+    b.inv_mass +
+    ra_cross_t * ra_cross_t * a.inv_inertia +
+    rb_cross_t * rb_cross_t * b.inv_inertia
+  if inv_mass_sum_t == 0.0 {
+    return
+  }
+  let mut jt = -rv2.dot(tangent) / inv_mass_sum_t
+  // Coulomb friction clamp.
+  let mu = (a.friction * a.friction + b.friction * b.friction).sqrt()
+  if jt.abs() > j * mu {
+    jt = if jt > 0.0 { j * mu } else { -j * mu }
+  }
+  let friction_impulse = tangent.scale(jt)
+  if !a.is_static() {
+    a.velocity = a.velocity.sub(friction_impulse.scale(a.inv_mass))
+    a.angular_velocity = a.angular_velocity -
+      ra.cross(friction_impulse) * a.inv_inertia
+  }
+  if !b.is_static() {
+    b.velocity = b.velocity.add(friction_impulse.scale(b.inv_mass))
+    b.angular_velocity = b.angular_velocity +
+      rb.cross(friction_impulse) * b.inv_inertia
   }
 }
 

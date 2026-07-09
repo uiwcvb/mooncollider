@@ -464,3 +464,265 @@ test "world/bounce" {
   // The body should not have fallen below the floor surface (y > -0.5).
   assert_true(body.position.y > -1.0)
 }
+
+// ---------------------------------------------------------------------------
+// GJK + EPA
+// ---------------------------------------------------------------------------
+
+///|
+test "gjk/circle_circle_hit" {
+  let a = @mooncollider.Shape::from_circle(
+    @mooncollider.Circle::new(@mooncollider.Vec2::new(0.0, 0.0), 1.0),
+  )
+  let b = @mooncollider.Shape::from_circle(
+    @mooncollider.Circle::new(@mooncollider.Vec2::new(1.5, 0.0), 1.0),
+  )
+  let m = @mooncollider.collide_gjk(a, b)
+  assert_true(m.colliding())
+  assert_true(m.depth > 0.0)
+}
+
+///|
+test "gjk/circle_circle_miss" {
+  let a = @mooncollider.Shape::from_circle(
+    @mooncollider.Circle::new(@mooncollider.Vec2::new(0.0, 0.0), 1.0),
+  )
+  let b = @mooncollider.Shape::from_circle(
+    @mooncollider.Circle::new(@mooncollider.Vec2::new(5.0, 0.0), 1.0),
+  )
+  let m = @mooncollider.collide_gjk(a, b)
+  assert_false(m.colliding())
+}
+
+///|
+test "gjk/aabb_aabb_hit" {
+  let a = @mooncollider.Shape::from_aabb(
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(0.0, 0.0),
+      @mooncollider.Vec2::new(2.0, 2.0),
+    ),
+  )
+  let b = @mooncollider.Shape::from_aabb(
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(1.0, 1.0),
+      @mooncollider.Vec2::new(3.0, 3.0),
+    ),
+  )
+  let m = @mooncollider.collide_gjk(a, b)
+  assert_true(m.colliding())
+  assert_true(m.depth > 0.0)
+}
+
+///|
+test "gjk/polygon_polygon_hit" {
+  let a = @mooncollider.Shape::from_polygon(
+    @mooncollider.Polygon::box(
+      @mooncollider.Vec2::new(0.0, 0.0),
+      @mooncollider.Vec2::new(2.0, 2.0),
+    ),
+  )
+  let b = @mooncollider.Shape::from_polygon(
+    @mooncollider.Polygon::box(
+      @mooncollider.Vec2::new(1.0, 1.0),
+      @mooncollider.Vec2::new(3.0, 3.0),
+    ),
+  )
+  let m = @mooncollider.collide_gjk(a, b)
+  assert_true(m.colliding())
+  assert_true(m.depth > 0.0)
+}
+
+///|
+test "gjk/polygon_polygon_miss" {
+  let a = @mooncollider.Shape::from_polygon(
+    @mooncollider.Polygon::box(
+      @mooncollider.Vec2::new(0.0, 0.0),
+      @mooncollider.Vec2::new(2.0, 2.0),
+    ),
+  )
+  let b = @mooncollider.Shape::from_polygon(
+    @mooncollider.Polygon::box(
+      @mooncollider.Vec2::new(10.0, 10.0),
+      @mooncollider.Vec2::new(12.0, 12.0),
+    ),
+  )
+  let m = @mooncollider.collide_gjk(a, b)
+  assert_false(m.colliding())
+}
+
+///|
+test "gjk/aabb_circle_hit" {
+  let a = @mooncollider.Shape::from_aabb(
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(0.0, 0.0),
+      @mooncollider.Vec2::new(2.0, 2.0),
+    ),
+  )
+  let b = @mooncollider.Shape::from_circle(
+    @mooncollider.Circle::new(@mooncollider.Vec2::new(3.0, 1.0), 1.5),
+  )
+  let m = @mooncollider.collide_gjk(a, b)
+  assert_true(m.colliding())
+  assert_true(m.depth > 0.0)
+}
+
+// ---------------------------------------------------------------------------
+// Sweep-and-Prune
+// ---------------------------------------------------------------------------
+
+///|
+test "sap/pairs" {
+  let sap = @mooncollider.SweepAndPrune::new()
+  sap.insert(
+    0,
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(0.0, 0.0),
+      @mooncollider.Vec2::new(1.0, 1.0),
+    ),
+  )
+  sap.insert(
+    1,
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(0.5, 0.5),
+      @mooncollider.Vec2::new(1.5, 1.5),
+    ),
+  )
+  sap.insert(
+    2,
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(10.0, 10.0),
+      @mooncollider.Vec2::new(11.0, 11.0),
+    ),
+  )
+  let pairs = sap.pairs()
+  assert_eq(pairs.length(), 1)
+  let (a, b) = pairs[0]
+  assert_eq(a, 0)
+  assert_eq(b, 1)
+}
+
+// ---------------------------------------------------------------------------
+// AABB Tree
+// ---------------------------------------------------------------------------
+
+///|
+test "aabmtree/pairs" {
+  let tree = @mooncollider.AABBTree::new()
+  let _ = tree.insert(
+    0,
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(0.0, 0.0),
+      @mooncollider.Vec2::new(1.0, 1.0),
+    ),
+  )
+  let _ = tree.insert(
+    1,
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(0.5, 0.5),
+      @mooncollider.Vec2::new(1.5, 1.5),
+    ),
+  )
+  let _ = tree.insert(
+    2,
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(10.0, 10.0),
+      @mooncollider.Vec2::new(11.0, 11.0),
+    ),
+  )
+  let pairs = tree.pairs()
+  assert_eq(pairs.length(), 1)
+  let (a, b) = pairs[0]
+  assert_eq(a, 0)
+  assert_eq(b, 1)
+}
+
+// ---------------------------------------------------------------------------
+// Friction
+// ---------------------------------------------------------------------------
+
+///|
+test "world/friction_slows_slide" {
+  // A box sliding on a floor with friction should slow down more than one
+  // sliding on a frictionless floor.
+  let make = fn(friction : Double) -> Double {
+    let w = @mooncollider.World::new()
+    let box_def = @mooncollider.BodyDef::dynamic(
+      @mooncollider.Vec2::new(0.0, 0.5),
+      @mooncollider.Shape::from_aabb(
+        @mooncollider.AABB::new(
+          @mooncollider.Vec2::zero(),
+          @mooncollider.Vec2::new(0.5, 0.5),
+        ),
+      ),
+      1.0,
+      0.0,
+    )
+    box_def.friction = friction
+    let _ = w.add_body(box_def)
+    let floor_def = @mooncollider.BodyDef::static_(
+      @mooncollider.Vec2::new(0.0, 0.0),
+      @mooncollider.Shape::from_aabb(
+        @mooncollider.AABB::from_min_max(
+          @mooncollider.Vec2::new(-20.0, -1.0),
+          @mooncollider.Vec2::new(20.0, 0.0),
+        ),
+      ),
+    )
+    floor_def.friction = friction
+    let _ = w.add_body(floor_def)
+    w.body(0).velocity = @mooncollider.Vec2::new(10.0, 0.0)
+    let mut i = 0
+    while i < 100 {
+      w.step(0.016)
+      i = i + 1
+    }
+    w.body(0).velocity.x
+  }
+  let v_high = make(0.9)
+  let v_low = make(0.0)
+  // High friction should slow the box more than no friction.
+  assert_true(v_high < v_low)
+}
+
+///|
+test "world/stacking_rest" {
+  // Three boxes stacked on a floor should come to rest without exploding.
+  let w = @mooncollider.World::new()
+  let floor_def = @mooncollider.BodyDef::static_(
+    @mooncollider.Vec2::new(0.0, 0.0),
+    @mooncollider.Shape::from_aabb(
+      @mooncollider.AABB::from_min_max(
+        @mooncollider.Vec2::new(-20.0, -1.0),
+        @mooncollider.Vec2::new(20.0, 0.0),
+      ),
+    ),
+  )
+  let _ = w.add_body(floor_def)
+  let mut i = 0
+  while i < 3 {
+    let def = @mooncollider.BodyDef::dynamic(
+      @mooncollider.Vec2::new(0.0, 1.0 + i.to_double()),
+      @mooncollider.Shape::from_aabb(
+        @mooncollider.AABB::new(
+          @mooncollider.Vec2::zero(),
+          @mooncollider.Vec2::new(0.5, 0.5),
+        ),
+      ),
+      1.0,
+      0.0,
+    )
+    def.friction = 0.6
+    let _ = w.add_body(def)
+    i = i + 1
+  }
+  let mut step = 0
+  while step < 300 {
+    w.step(0.016)
+    step = step + 1
+  }
+  // The topmost box (id 3) should have settled near y=2 (stacked 0.5-high
+  // boxes on a floor whose top is at y=0). Allow generous tolerance.
+  let top = w.body(3)
+  assert_true(top.position.y < 10.0)
+  assert_true(top.position.y > 0.0)
+}

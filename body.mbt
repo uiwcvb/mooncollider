@@ -38,8 +38,12 @@ pub(all) struct RigidBody {
   mut inv_inertia : Double
   /// Coefficient of restitution (bounciness). 0 = no bounce, 1 = perfect.
   mut restitution : Double
+  /// Coefficient of friction (Coulomb). 0 = frictionless, ~0.3 typical.
+  mut friction : Double
   /// Linear damping per second (0 = none, ~0.1 typical).
   mut linear_damping : Double
+  /// Angular damping per second.
+  mut angular_damping : Double
   /// The local-space shape, centered at origin.
   shape : Shape
   /// Cached world-space AABB, updated by `update_aabb`.
@@ -51,14 +55,16 @@ pub(all) struct RigidBody {
 ///|
 /// Body construction parameters.
 pub(all) struct BodyDef {
-  body_type : BodyType
-  position : Vec2
-  angle : Double
-  shape : Shape
-  mass : Double
-  restitution : Double
-  linear_damping : Double
-  gravity_scale : Double
+  mut body_type : BodyType
+  mut position : Vec2
+  mut angle : Double
+  mut shape : Shape
+  mut mass : Double
+  mut restitution : Double
+  mut friction : Double
+  mut linear_damping : Double
+  mut angular_damping : Double
+  mut gravity_scale : Double
 }
 
 ///|
@@ -76,7 +82,9 @@ pub fn BodyDef::dynamic(
     shape,
     mass,
     restitution,
+    friction: 0.2,
     linear_damping: 0.1,
+    angular_damping: 0.1,
     gravity_scale: 1.0,
   }
 }
@@ -91,7 +99,9 @@ pub fn BodyDef::static_(position : Vec2, shape : Shape) -> BodyDef {
     shape,
     mass: 0.0,
     restitution: 0.0,
+    friction: 0.4,
     linear_damping: 0.0,
+    angular_damping: 0.0,
     gravity_scale: 0.0,
   }
 }
@@ -131,7 +141,9 @@ pub fn RigidBody::from_def(id : Int, def : BodyDef) -> RigidBody {
     inertia,
     inv_inertia,
     restitution: def.restitution,
+    friction: def.friction,
     linear_damping: def.linear_damping,
+    angular_damping: def.angular_damping,
     shape: def.shape,
     aabb: AABB::new(Vec2::zero(), Vec2::zero()),
     gravity_scale: def.gravity_scale,

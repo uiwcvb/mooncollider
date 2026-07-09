@@ -18,6 +18,8 @@ pub fn collide_circle_circle(Circle, Circle) -> Manifold
 
 pub fn collide_circle_polygon(Circle, Polygon) -> Manifold
 
+pub fn collide_gjk(Shape, Shape) -> Manifold
+
 pub fn collide_polygon_polygon(Polygon, Polygon) -> Manifold
 
 pub fn raycast(Ray, Shape) -> RaycastHit
@@ -49,15 +51,28 @@ pub fn AABB::surface_area(Self) -> Double
 pub fn AABB::union(Self, Self) -> Self
 pub fn AABB::width(Self) -> Double
 
+pub(all) struct AABBTree {
+  mut root : Int
+  nodes : Array[TreeNode]
+  free_list : Array[Int]
+  body_ids : Array[Int]
+}
+pub fn AABBTree::insert(Self, Int, AABB) -> Int
+pub fn AABBTree::new() -> Self
+pub fn AABBTree::pairs(Self) -> Array[(Int, Int)]
+pub fn AABBTree::size(Self) -> Int
+
 pub(all) struct BodyDef {
-  body_type : BodyType
-  position : Vec2
-  angle : Double
-  shape : Shape
-  mass : Double
-  restitution : Double
-  linear_damping : Double
-  gravity_scale : Double
+  mut body_type : BodyType
+  mut position : Vec2
+  mut angle : Double
+  mut shape : Shape
+  mut mass : Double
+  mut restitution : Double
+  mut friction : Double
+  mut linear_damping : Double
+  mut angular_damping : Double
+  mut gravity_scale : Double
 }
 pub fn BodyDef::dynamic(Vec2, Shape, Double, Double) -> Self
 pub fn BodyDef::static_(Vec2, Shape) -> Self
@@ -149,7 +164,9 @@ pub(all) struct RigidBody {
   mut inertia : Double
   mut inv_inertia : Double
   mut restitution : Double
+  mut friction : Double
   mut linear_damping : Double
+  mut angular_damping : Double
   shape : Shape
   mut aabb : AABB
   mut gravity_scale : Double
@@ -170,6 +187,24 @@ pub fn Shape::aabb(Self) -> AABB
 pub fn Shape::from_aabb(AABB) -> Self
 pub fn Shape::from_circle(Circle) -> Self
 pub fn Shape::from_polygon(Polygon) -> Self
+pub fn Shape::support(Self, Vec2) -> Vec2
+
+pub(all) struct SweepAndPrune {
+  entries : Array[(Int, AABB)]
+}
+pub fn SweepAndPrune::clear(Self) -> Unit
+pub fn SweepAndPrune::insert(Self, Int, AABB) -> Unit
+pub fn SweepAndPrune::new() -> Self
+pub fn SweepAndPrune::pairs(Self) -> Array[(Int, Int)]
+
+pub(all) struct TreeNode {
+  mut box : AABB
+  mut parent : Int
+  mut left : Int
+  mut right : Int
+  mut body_id : Int
+  mut height : Int
+}
 
 pub(all) struct Vec2 {
   x : Double

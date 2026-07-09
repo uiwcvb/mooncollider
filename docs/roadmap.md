@@ -5,12 +5,13 @@
 - Vec2 math
 - AABB / Circle / Polygon shapes (convex hull, regular, box builders)
 - Narrowphase: all 9 shape-pair collisions via SAT + closest-point
+- GJK + EPA generic convex collision
 - Raycast: ray vs AABB / Circle / Polygon
-- Broadphase: uniform grid hash + loose quadtree
-- RigidBody: mass, inertia, restitution, damping, static/dynamic
-- World::step: integration + broadphase + narrowphase + impulse resolution
-- Bounce demo
-- CI, README, tests
+- Broadphase: uniform grid hash + loose quadtree + sweep-and-prune + dynamic AABB tree
+- RigidBody: mass, inertia, restitution, friction, damping, static/dynamic
+- World::step: integration + broadphase + narrowphase + impulse + friction + Baumgarte resolution
+- Bounce demo, stacking demo, raycast demo, batch collision example
+- CI, README, tests (40 blackbox + whitebox)
 
 ## Future
 

@@ -12,16 +12,18 @@
 vec2.mbt          ──┐
 shape.mbt          ─┼─ geometry primitives shared by all layers
 narrowphase.mbt    ─┤─ pairwise collision -> Manifold
+gjk.mbt            ─┤─ GJK + EPA generic convex collision
 raycast.mbt        ─┤─ ray vs shape -> RaycastHit
-broadphase.mbt     ─┤─ GridHash / QuadTree -> candidate pairs
+broadphase.mbt     ─┤─ GridHash / QuadTree
+broadphase_sap.mbt ─┤─ SweepAndPrune / AABBTree
 body.mbt           ─┤─ RigidBody kinematics + shape transform
 world.mbt          ─┴─ World::step orchestrator
 ```
 
 Each layer depends only on the layers below it. `vec2` and `shape` have no
-dependencies on the rest. `narrowphase` and `raycast` depend on `shape`.
-`broadphase` depends on `shape` (AABB only). `body` depends on `shape` and
-`vec2`. `world` depends on everything.
+dependencies on the rest. `narrowphase`, `gjk`, and `raycast` depend on
+`shape`. `broadphase` and `broadphase_sap` depend on `shape` (AABB only).
+`body` depends on `shape` and `vec2`. `world` depends on everything.
 
 ## Key design choices
 
@@ -42,9 +44,26 @@ normal is re-oriented to point from A to B using the centroid vector.
 
 ### Broadphase pair dedup
 
-Both `GridHash` and `QuadTree` return pairs with `a < b`, deduplicated via a
-`Map[(Int, Int), Unit]`. This keeps the narrowphase from seeing the same
-pair twice.
+All four broadphase structures (`GridHash`, `QuadTree`, `SweepAndPrune`,
+`AABBTree`) return pairs with `a < b`, deduplicated via a `Map[(Int, Int), Unit]`.
+This keeps the narrowphase from seeing the same pair twice.
+
+### GJK + EPA
+
+`collide_gjk` is an alternative to the specialized narrowphase functions. It
+works on any pair of convex shapes through their `Shape::support` function
+(farthest point along a direction), so it handles Circle, AABB, and convex
+Polygon uniformly. GJK builds a simplex in Minkowski-difference space; if the
+origin is enclosed, the shapes overlap and EPA expands the simplex to find
+the penetration depth and normal. Use it as a generic fallback when a
+specialized pair function isn't available.
+
+### Friction
+
+After the normal impulse, `World::resolve` computes a tangential impulse
+clamped by the Coulomb cone (`|jt| <= mu * |j|`, where `mu` is the combined
+friction coefficient `sqrt(a.friction^2 + b.friction^2)`). This produces
+realistic sliding and resting behavior.
 
 ### Rigid body integration
 

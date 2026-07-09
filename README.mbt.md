@@ -24,14 +24,18 @@ js, native).
   - AABB vs Polygon
   - Circle vs Polygon (including center-inside-polygon)
   - Generic `collide(a, b)` dispatch over all 9 pairs
+  - `collide_gjk(a, b)` — GJK + EPA for arbitrary convex shapes via support functions
 - **Raycast** — ray vs AABB / Circle / Polygon, returning parametric `t`,
   hit point, and surface normal.
-- **Broadphase** — uniform spatial hash grid (`GridHash`) and loose quadtree
-  (`QuadTree`), both producing candidate collision pairs.
-- **Rigid body** — `RigidBody` with mass, inertia, restitution, damping,
-  static/dynamic types; `World::step` integrates forces, runs broadphase +
-  narrowphase, and resolves collisions with impulses + Baumgarte positional
-  correction.
+- **Broadphase** — three options:
+  - `GridHash` — uniform spatial hash grid
+  - `QuadTree` — loose quadtree
+  - `SweepAndPrune` — single-axis sort and sweep
+  - `AABBTree` — dynamic AABB tree with volume-minimizing insertion
+- **Rigid body** — `RigidBody` with mass, inertia, restitution, friction,
+  damping, static/dynamic types; `World::step` integrates forces, runs
+  broadphase + narrowphase, and resolves collisions with normal impulses,
+  Coulomb friction impulses, and Baumgarte positional correction.
 
 ## Installation
 
@@ -122,13 +126,14 @@ grid.insert(1, aabb_b)
 let pairs = grid.pairs() // Array[(Int, Int)], each (a, b) with a < b
 ```
 
-## Run the demo
+## Run the demos
 
 ```bash
-moon run cmd/main
+moon run cmd/main        # bouncing ball under gravity
+moon run cmd/stacking    # column of boxes settling into a stack
+moon run cmd/raycast     # rays cast at a scene of shapes
+moon run examples/pairs  # batch collision queries without a world
 ```
-
-Prints the height and velocity of a bouncing ball over 200 steps.
 
 ## Tests
 
@@ -137,8 +142,8 @@ moon test
 ```
 
 The suite covers vector math, all shape operations, every narrowphase pair,
-raycasting, both broadphase structures, and the rigid-body world (gravity,
-bounce).
+GJK+EPA, raycasting, all four broadphase structures, and the rigid-body world
+(gravity, bounce, friction, stacking).
 
 ## Verification
 
@@ -164,12 +169,18 @@ mooncollider/
   vec2.mbt                     2D vector math
   shape.mbt                    AABB, Circle, Polygon, Shape
   narrowphase.mbt              collision detection + Manifold
+  gjk.mbt                      GJK + EPA generic convex collision
   raycast.mbt                  ray vs shape
   broadphase.mbt               GridHash + QuadTree
+  broadphase_sap.mbt           SweepAndPrune + AABBTree
   body.mbt                     RigidBody + BodyDef
   world.mbt                    World::step + collision resolution
   mooncollider_test.mbt        blackbox tests (public API)
-  cmd/main/                    runnable bounce demo
+  mooncollider_wbtest.mbt      whitebox tests (internal helpers)
+  cmd/main/                    bounce demo
+  cmd/stacking/                stacking demo
+  cmd/raycast/                 raycast demo
+  examples/pairs/              batch collision query example
   docs/                        design notes + roadmap
 ```
 

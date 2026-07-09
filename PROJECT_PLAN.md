@@ -12,166 +12,79 @@ This file is the recovery document for context compression. If the chat context 
 - License: Apache-2.0
 - Competition: 2026 MoonBit 国产基础软件生态开源大赛 / MoonBit 开源生态项目贡献赛
 
-## Why this project
+## Status: COMPLETE
 
-Competition official recommended directions include game engine bindings and game tooling. After scanning mooncakes.io, the following are already taken:
+All planned features implemented, tested, committed. Verification passes:
+- `moon check` ✓
+- `moon test` ✓ (30 tests, all pass)
+- `moon info && git diff --exit-code` ✓ (clean)
+- `moon fmt && git diff --exit-code` ✓ (clean)
+- `moon run cmd/main` ✓ (bounce demo runs)
 
-- game engine binding: MoonPhaserKit (Phaser3)
-- pathfinding: wzx2007/moonpath
-- linear algebra: Luna-Flow/linear-algebra
-- 3D geometry: Luna-Flow/geometry3d
-- animation engine: CAIMEOX/Motiva
+## What was built
 
-Nobody has built a 2D collision detection or physics library for MoonBit. MoonCollider fills that gap.
+### Library files (root package `bubuki/mooncollider`)
+- `vec2.mbt` — Vec2 math (add/sub/scale/neg/dot/cross/length/normalize/perp/rotate/approx_eq)
+- `shape.mbt` — AABB, Circle, Polygon (convex_hull/regular/box), Shape enum + dispatch
+- `narrowphase.mbt` — all 9 shape-pair collisions (SAT for polygons) + Manifold + generic `collide()`
+- `raycast.mbt` — ray vs AABB/Circle/Polygon + generic `raycast()`
+- `broadphase.mbt` — GridHash (uniform grid) + QuadTree (loose quadtree)
+- `body.mbt` — RigidBody + BodyDef (dynamic/static, mass, inertia, restitution, damping)
+- `world.mbt` — World::step (integrate forces, broadphase, narrowphase, impulse + Baumgarte resolve)
 
-It is a pure-logic library, no rendering, no native backend, no async. Works on wasm-gc and js backends.
+### Tests
+- `mooncollider_test.mbt` — 27 blackbox tests (public API): vec2, shapes, all narrowphase pairs, raycast, both broadphase, world gravity + bounce
+- `mooncollider_wbtest.mbt` — 3 whitebox tests (internal helpers: cross3, closest_point_on_segment, point_in_polygon)
 
-## What it does (concrete)
+### Demo
+- `cmd/main/` — bounce demo: ball under gravity bouncing on static floor, prints y/vy for 200 steps
 
-A 2D game physics and collision toolkit:
+### Docs / config
+- `README.mbt.md` — full README with features, install, quick start, examples, verification
+- `docs/design.md` — architecture, manifold convention, SAT, broadphase dedup, integration
+- `docs/roadmap.md` — done + future (CCD, multi-contact, joints, sleeping, GJK/EPA)
+- `.github/workflows/ci.yml` — CI: check/test/info-diff/fmt-diff/run
+- `LICENSE` — Apache-2.0
 
-1. Vector math: Vec2 add/sub/scale/dot/cross/normalize/length/rotate
-2. Shapes: AABB (axis-aligned box), Circle, convex Polygon
-3. Narrowphase collision:
-   - AABB vs AABB
-   - Circle vs Circle
-   - AABB vs Circle
-   - Polygon vs Polygon (SAT — Separating Axis Theorem)
-   - AABB vs Polygon
-4. Raycast: ray vs AABB, ray vs Circle, ray vs Polygon, hit point + normal + distance
-5. Broadphase:
-   - uniform grid hash
-   - quadtree
-6. Lightweight rigid body:
-   - position, velocity, acceleration
-   - gravity
-   - collision response: bounce with restitution, penetration separation
-7. World: step function that integrates bodies, runs broadphase + narrowphase, resolves collisions
-
-Target code size: 3~5k LOC MoonBit (not counting tests).
-
-## Competition facts
-
-Official pages:
-- GitLink: https://www.gitlink.org.cn/competitions/track1_2026MoonBit
-- OSC2026: https://moonbitlang.github.io/OSC2026/
-
-Requirements:
-- MoonBit as main language
-- public repo
-- clear README
-- runnable examples
-- CI
-- tests
-- publish to mooncakes.io
-- recommended 4~10k effective MoonBit LOC
-
-CI hard requirements (from pre-acceptance feedback):
-```bash
-moon check
-moon test
-moon info && git diff --exit-code
-```
-
-CI soft / bonus:
-```bash
-moon fmt && git diff --exit-code
-```
-
-Do NOT use `moon fmt --deny-warn` or `moon info --deny-warn` — current toolchain (moon 0.1.20260703) does not support `--deny-warn` for those subcommands.
-
-Judge will `moon add` the package and try to use it per README. Must produce reasonable results.
+## LOC
+- ~2235 total (library + tests + demo)
 
 ## Toolchain
 
-Installed at: `~/.moon/bin/moon`
-Version: `moon 0.1.20260703 (6fbf8c3 2026-07-03)`
+- Installed at: `~/.moon/bin/moon`
+- Version: `moon 0.1.20260703 (6fbf8c3 2026-07-03)`
+- Always prefix commands with: `PATH="$HOME/.moon/bin:$PATH"`
 
-Always prefix commands with:
-```bash
-PATH="$HOME/.moon/bin:$PATH"
-```
+## MoonBit syntax reference (learned during build)
 
-## Directory layout (planned)
+- Package root config: `moon.mod`; package config: `moon.pkg` (no `.json`)
+- Import math: add `"moonbitlang/core/math"` to `moon.pkg`, call `@math.sin(x)` / `@math.cos(x)` / `@math.PI`
+- `Double::abs(x)` is a method (builtin); `(x).sqrt()` is a method
+- `Map` is builtin (prelude); empty literal `Map([])` (NOT `Map::new()` which is deprecated)
+- `Map[K,V]` methods: `.get(k) -> V?`, `.set(k,v)`, `.contains(k)`, `.clear()`, `.each(fn(k,v){...})`
+- `Array[T]` literal `[]`; `.push`, `.pop`, `.length`, `.make(n, v)`
+- `pub(all) struct` = all fields + constructor visible; fields are immutable unless `mut`
+- `pub enum` with payload: `Shape::AABB(AABB)`; construct via `Shape::AABB(x)` or match `(Shape::AABB(b), ...)`
+- Derive: `derive(Eq, Debug)` (not Show — deprecated); `Hash` for hashmap keys
+- For loop: `for i = 0; i < n; i = i + 1 { ... }`; while: `while cond { ... }`
+- `not(x)` deprecated → use `!x`
+- Float literal `1e-9` invalid → use `1.0e-9`
+- `&mut` refs tricky; prefer returning values or passing `Array` (mutable reference type)
+- `moon fmt` inserts `///|` before each `test` block; commit after fmt
+- WSL mount: `git config core.filemode false` to avoid mode diffs
 
-```
-mooncollider/
-  moon.mod
-  moon.pkg
-  mooncollider.mbt          # root library package
-  mooncollider_test.mbt
-  pkg.generated.mbti
-  cmd/main/                 # runnable demo
-    moon.pkg
-    main.mbt
-  examples/
-    bounce/                 # gravity + bounce demo
-    stacking/               # box stacking demo
-    raycast/                # raycast visualization demo
-  docs/
-    design.md
-    roadmap.md
-  .github/workflows/ci.yml
-  README.md
-  README.mbt.md
-  LICENSE
-  .gitignore
-```
+## Implementation order (completed)
 
-## MoonBit syntax reference (learned from previous project)
-
-- Package root config: `moon.mod` (not `moon.mod.json`)
-- Package config: `moon.pkg` (not `moon.pkg.json`)
-- Import syntax in moon.pkg:
-  ```
-  import {
-    "bubuki/mooncollider"
-  }
-  ```
-- Public struct with all fields visible: `pub(all) struct Foo { ... }`
-- Public enum with all constructors visible: `pub(all) enum Foo { ... }`
-- Derive: `derive(Eq, Debug)` — use `Debug` not `Show` (Show is deprecated)
-- Struct literal needs trailing comma for single field: `{ value, }`
-- Test syntax: `test "name" { ... }`
-- Inspect: `inspect(value, content="expected")`
-- Main: `fn main { ... }` (no parens needed)
-- Mutable local: `let mut x = 0`
-- While loop: `while i < n { ... }`
-- For loop pattern: `for i = start, x = init; cond; { continue new_i, new_x }`
-- Array: `Array[T]`, push/pop/length/index
-- String concat: `+`
-- Int to string: `to_string()`
-- Format check: `moon fmt --check`
-- Format write: `moon fmt`
-- Info generate: `moon info`
-- `moon fmt` reformats doc comments from `///| text` to `///|\n/// text`
-- After `moon fmt`, import alias `@name` gets removed, package referenced by last path segment
-- `git config core.filemode false` needed on WSL mounts to avoid mode diff noise
-
-## Implementation order
-
-1. Init project: moon.mod, moon.pkg, empty .mbt, cmd/main, moon check passes
-2. Vec2 + tests
-3. Shape types (AABB, Circle, Polygon) + tests
-4. AABB vs AABB collision + manifold + tests
-5. Circle vs Circle + tests
-6. AABB vs Circle + tests
-7. Polygon SAT + tests
-8. Raycast (ray vs AABB/Circle/Polygon) + tests
-9. Broadphase: uniform grid hash + tests
-10. Broadphase: quadtree + tests
-11. RigidBody + World::step + collision response + tests
-12. Demos: bounce, stacking, raycast
-13. CI, README, docs, LICENSE
-14. Full verification: moon check / fmt / info / test / run all demos
-15. Temp git repo CI simulation
-
-## Abandoned previous project
-
-MoonAct (deterministic actor simulation) was abandoned because:
-- code too small (~800 LOC) for a "framework" track
-- concept too narrow (only FIFO + drop/delay)
-- abstract, hard to understand at a glance
-- risk of collision with other actor/simulation submissions
-
-Old moonact directory was deleted and replaced by mooncollider.
+1. ✓ Init project (moon new)
+2. ✓ Vec2 + tests
+3. ✓ Shape types (AABB, Circle, Polygon) + tests
+4. ✓ AABB vs AABB / Circle vs Circle / AABB vs Circle + Manifold + tests
+5. ✓ Polygon SAT + tests
+6. ✓ Raycast (ray vs all shapes) + tests
+7. ✓ Broadphase: uniform grid + tests
+8. ✓ Broadphase: quadtree + tests
+9. ✓ RigidBody + World::step + collision response + tests
+10. ✓ Bounce demo
+11. ✓ CI, README, docs, LICENSE
+12. ✓ Full verification: moon check / test / info / fmt / run all pass
+13. ✓ Whitebox tests for internal helpers

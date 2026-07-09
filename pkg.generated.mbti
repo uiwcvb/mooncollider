@@ -1,0 +1,214 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bubuki/mooncollider"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn collide(Shape, Shape) -> Manifold
+
+pub fn collide_aabb_aabb(AABB, AABB) -> Manifold
+
+pub fn collide_aabb_circle(AABB, Circle) -> Manifold
+
+pub fn collide_aabb_polygon(AABB, Polygon) -> Manifold
+
+pub fn collide_circle_circle(Circle, Circle) -> Manifold
+
+pub fn collide_circle_polygon(Circle, Polygon) -> Manifold
+
+pub fn collide_polygon_polygon(Polygon, Polygon) -> Manifold
+
+pub fn raycast(Ray, Shape) -> RaycastHit
+
+pub fn raycast_aabb(Ray, AABB) -> RaycastHit
+
+pub fn raycast_circle(Ray, Circle) -> RaycastHit
+
+pub fn raycast_polygon(Ray, Polygon) -> RaycastHit
+
+// Errors
+
+// Types and methods
+pub(all) struct AABB {
+  center : Vec2
+  half : Vec2
+} derive(Eq, @debug.Debug)
+pub fn AABB::area(Self) -> Double
+pub fn AABB::contains(Self, Vec2) -> Bool
+pub fn AABB::expand_point(Self, Vec2) -> Self
+pub fn AABB::from_min_max(Vec2, Vec2) -> Self
+pub fn AABB::height(Self) -> Double
+pub fn AABB::max(Self) -> Vec2
+pub fn AABB::min(Self) -> Vec2
+pub fn AABB::new(Vec2, Vec2) -> Self
+pub fn AABB::overlaps(Self, Self) -> Bool
+pub fn AABB::perimeter(Self) -> Double
+pub fn AABB::surface_area(Self) -> Double
+pub fn AABB::union(Self, Self) -> Self
+pub fn AABB::width(Self) -> Double
+
+pub(all) struct BodyDef {
+  body_type : BodyType
+  position : Vec2
+  angle : Double
+  shape : Shape
+  mass : Double
+  restitution : Double
+  linear_damping : Double
+  gravity_scale : Double
+}
+pub fn BodyDef::dynamic(Vec2, Shape, Double, Double) -> Self
+pub fn BodyDef::static_(Vec2, Shape) -> Self
+
+pub enum BodyType {
+  Static
+  Dynamic
+}
+
+pub(all) struct CellKey {
+  cx : Int
+  cy : Int
+} derive(Eq, Hash)
+
+pub(all) struct Circle {
+  center : Vec2
+  radius : Double
+} derive(Eq, @debug.Debug)
+pub fn Circle::contains(Self, Vec2) -> Bool
+pub fn Circle::new(Vec2, Double) -> Self
+
+pub(all) struct GridHash {
+  cell_size : Double
+  mut cells : Map[CellKey, Array[Int]]
+}
+pub fn GridHash::clear(Self) -> Unit
+pub fn GridHash::insert(Self, Int, AABB) -> Unit
+pub fn GridHash::new(Double) -> Self
+pub fn GridHash::pairs(Self) -> Array[(Int, Int)]
+
+pub(all) struct Manifold {
+  normal : Vec2
+  depth : Double
+  contact : Vec2
+} derive(Eq, @debug.Debug)
+pub fn Manifold::colliding(Self) -> Bool
+pub fn Manifold::new(Vec2, Double, Vec2) -> Self
+pub fn Manifold::none() -> Self
+
+pub(all) struct Polygon {
+  vertices : Array[Vec2]
+  normals : Array[Vec2]
+} derive(Eq, @debug.Debug)
+pub fn Polygon::aabb(Self) -> AABB
+pub fn Polygon::box(Vec2, Vec2) -> Self
+pub fn Polygon::convex_hull(Array[Vec2]) -> Self
+pub fn Polygon::from_vertices_ccw(Array[Vec2]) -> Self
+pub fn Polygon::regular(Vec2, Double, Int) -> Self
+pub fn Polygon::size(Self) -> Int
+
+pub(all) struct QuadTree {
+  bounds : AABB
+  capacity : Int
+  max_depth : Int
+  mut depth : Int
+  mut items : Array[(Int, AABB)]
+  mut children : Array[QuadTree]?
+}
+pub fn QuadTree::insert(Self, Int, AABB) -> Unit
+pub fn QuadTree::new(AABB, Int, Int) -> Self
+pub fn QuadTree::pairs(Self) -> Array[(Int, Int)]
+
+pub(all) struct Ray {
+  origin : Vec2
+  direction : Vec2
+} derive(Eq, @debug.Debug)
+pub fn Ray::from_to(Vec2, Vec2) -> Self
+pub fn Ray::new(Vec2, Vec2) -> Self
+
+pub(all) struct RaycastHit {
+  t : Double
+  point : Vec2
+  normal : Vec2
+} derive(Eq, @debug.Debug)
+pub fn RaycastHit::hit(Self) -> Bool
+pub fn RaycastHit::new(Double, Vec2, Vec2) -> Self
+
+pub(all) struct RigidBody {
+  id : Int
+  mut body_type : BodyType
+  mut position : Vec2
+  mut angle : Double
+  mut velocity : Vec2
+  mut angular_velocity : Double
+  mut force : Vec2
+  mut torque : Double
+  mut mass : Double
+  mut inv_mass : Double
+  mut inertia : Double
+  mut inv_inertia : Double
+  mut restitution : Double
+  mut linear_damping : Double
+  shape : Shape
+  mut aabb : AABB
+  mut gravity_scale : Double
+}
+pub fn RigidBody::apply_force(Self, Vec2) -> Unit
+pub fn RigidBody::apply_linear_impulse(Self, Vec2) -> Unit
+pub fn RigidBody::from_def(Int, BodyDef) -> Self
+pub fn RigidBody::is_static(Self) -> Bool
+pub fn RigidBody::update_aabb(Self) -> Unit
+pub fn RigidBody::world_shape(Self) -> Shape
+
+pub enum Shape {
+  AABB(AABB)
+  Circle(Circle)
+  Polygon(Polygon)
+}
+pub fn Shape::aabb(Self) -> AABB
+pub fn Shape::from_aabb(AABB) -> Self
+pub fn Shape::from_circle(Circle) -> Self
+pub fn Shape::from_polygon(Polygon) -> Self
+
+pub(all) struct Vec2 {
+  x : Double
+  y : Double
+} derive(Eq, @debug.Debug)
+pub fn Vec2::add(Self, Self) -> Self
+pub fn Vec2::approx_eq(Self, Self, Double) -> Bool
+pub fn Vec2::cross(Self, Self) -> Double
+pub fn Vec2::dot(Self, Self) -> Double
+pub fn Vec2::length(Self) -> Double
+pub fn Vec2::length_sq(Self) -> Double
+pub fn Vec2::neg(Self) -> Self
+pub fn Vec2::new(Double, Double) -> Self
+pub fn Vec2::normalize(Self) -> Self
+pub fn Vec2::perp(Self) -> Self
+pub fn Vec2::rotate(Self, Double) -> Self
+pub fn Vec2::scale(Self, Double) -> Self
+pub fn Vec2::sub(Self, Self) -> Self
+pub fn Vec2::unit_x() -> Self
+pub fn Vec2::unit_y() -> Self
+pub fn Vec2::zero() -> Self
+
+pub(all) struct World {
+  mut gravity : Vec2
+  bodies : Array[RigidBody]
+  mut grid_cell_size : Double
+  velocity_iterations : Int
+  position_correction : Double
+  slop : Double
+}
+pub fn World::add_body(Self, BodyDef) -> Int
+pub fn World::body(Self, Int) -> RigidBody
+pub fn World::body_count(Self) -> Int
+pub fn World::new() -> Self
+pub fn World::set_gravity(Self, Vec2) -> Unit
+pub fn World::set_grid_cell_size(Self, Double) -> Unit
+pub fn World::step(Self, Double) -> Unit
+
+// Type aliases
+
+// Traits
+

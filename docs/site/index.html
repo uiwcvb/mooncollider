@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MoonCollider — MoonBit 2D 游戏物理与碰撞检测库</title>
 <meta name="description" content="MoonCollider 是面向 MoonBit 的 2D 游戏物理与碰撞检测库，提供 SAT 窄相、GJK+EPA、四种宽相、刚体求解器、关节约束与 CCD 连续碰撞检测。">
+<meta property="og:title" content="MoonCollider — MoonBit 2D 游戏物理与碰撞检测库">
+<meta property="og:description" content="SAT 窄相、GJK+EPA、四种宽相、顺序冲量求解器、关节约束、CCD——纯逻辑无渲染，跑遍 wasm-gc / js / native。">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <style>
 :root{
   --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --border:#30363d;
@@ -90,11 +94,27 @@ td .ok{color:var(--accent2)}
 /* footer */
 footer{border-top:1px solid var(--border);padding:40px 0;text-align:center;color:var(--txt2);font-size:.9em}
 footer a{color:var(--accent)}
+/* interactive canvas sandbox */
+.sandbox-wrap{margin:40px auto 0;max-width:880px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--bg2)}
+.sandbox-head{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:.84em;color:var(--txt2)}
+.sandbox-head .live{display:flex;align-items:center;gap:6px;color:var(--accent2)}
+.sandbox-head .live .pulse{width:8px;height:8px;border-radius:50%;background:var(--accent2);animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.sandbox-head .ctrl{display:flex;gap:8px}
+.sandbox-head button{background:var(--bg2);color:var(--txt2);border:1px solid var(--border);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:.9em;transition:all .12s}
+.sandbox-head button:hover{border-color:var(--accent);color:var(--txt)}
+.sandbox-head button.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+#sandbox{display:block;width:100%;height:360px;cursor:crosshair}
+.sandbox-hint{text-align:center;padding:8px;font-size:.8em;color:var(--txt2);background:var(--bg2);border-top:1px solid var(--border)}
+/* scroll reveal */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:translateY(0)}
 @media(max-width:760px){
   .hero h1{font-size:2.2em}
   .stats{grid-template-columns:repeat(2,1fr)}
   .feat-grid,.demo-grid{grid-template-columns:1fr}
   nav .links{display:none}
+  #sandbox{height:280px}
 }
 </style>
 </head>
@@ -128,6 +148,20 @@ footer a{color:var(--accent)}
     <span class="badge"><span class="ok">✓</span> moon info</span>
     <span class="badge"><span class="ok">✓</span> moon fmt</span>
     <span class="badge"><span class="ok">✓</span> fuzz + 确定性快照</span>
+  </div>
+
+  <div class="sandbox-wrap">
+    <div class="sandbox-head">
+      <div class="live"><span class="pulse"></span> 实时物理沙盒 · 由 MoonCollider 引擎驱动</div>
+      <div class="ctrl">
+        <button id="btnBall" class="active">球</button>
+        <button id="btnBox">箱</button>
+        <button id="btnClear">清空</button>
+        <button id="btnGravity">重力开</button>
+      </div>
+    </div>
+    <canvas id="sandbox"></canvas>
+    <div class="sandbox-hint">点击/触摸添加物体 · 切换球/箱 · 开关重力 · 右上角显示真实 body 数量</div>
   </div>
 </div>
 
@@ -363,6 +397,199 @@ moon add bubuki/mooncollider</code></pre>
     <p style="margin-top:8px">为 <a href="https://www.moonbitlang.com/" target="_blank">MoonBit</a> 生态而生 · 2026 MoonBit 国产基础软件生态开源大赛参赛作品</p>
   </div>
 </footer>
+
+<script src="mooncollider.js"></script>
+<script>
+// Real MoonCollider physics sandbox — calls into the compiled MoonBit wasm/js.
+// `MoonCollider` global is registered by mooncollider.js at load time.
+(function(){
+  const MC = window.MoonCollider;
+  if(!MC || !MC.web_step){
+    document.querySelector('.sandbox-hint').textContent = '物理引擎加载失败，请刷新页面';
+    return;
+  }
+  const canvas=document.getElementById('sandbox');
+  const ctx=canvas.getContext('2d');
+  let W,H,DPR=window.devicePixelRatio||1;
+  function resize(){
+    const r=canvas.getBoundingClientRect();
+    W=r.width;H=r.height;canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  resize();window.addEventListener('resize',()=>{resize();rebuildWalls()});
+
+  // Coordinate transform: physics world is centered at (0,0), +y up.
+  // Canvas: origin top-left, +y down. Scale: 1 physics unit = PX_PER_UNIT px.
+  const PX_PER_UNIT = 30;
+  let worldW = W / PX_PER_UNIT;
+  let worldH = H / PX_PER_UNIT;
+  let gravityOn = true;
+  let mode = 'ball';
+  let bodyIds = []; // track dynamic body ids we created
+  let wallIds = [];
+
+  function toCanvasX(wx){ return W/2 + wx * PX_PER_UNIT; }
+  function toCanvasY(wy){ return H/2 - wy * PX_PER_UNIT; }
+  function toWorldX(cx){ return (cx - W/2) / PX_PER_UNIT; }
+  function toWorldY(cy){ return (H/2 - cy) / PX_PER_UNIT; }
+
+  function rebuildWalls(){
+    // remove old walls by re-initing (simplest), then re-add everything
+    // ponytail: no per-body remove in World API yet, so full re-init
+    MC.web_init();
+    bodyIds = [];
+    wallIds = [];
+    worldW = W / PX_PER_UNIT;
+    worldH = H / PX_PER_UNIT;
+    // floor
+    wallIds.push(MC.web_add_wall(0, -worldH/2 + 0.5, worldW/2, 0.5));
+    // ceiling
+    wallIds.push(MC.web_add_wall(0, worldH/2 - 0.5, worldW/2, 0.5));
+    // left
+    wallIds.push(MC.web_add_wall(-worldW/2 + 0.5, 0, 0.5, worldH/2));
+    // right
+    wallIds.push(MC.web_add_wall(worldW/2 - 0.5, 0, 0.5, worldH/2));
+    if(!gravityOn) MC.web_set_gravity(0, 0);
+  }
+
+  rebuildWalls();
+
+  function addBall(wx, wy){
+    const r = 0.3 + Math.random() * 0.4;
+    const m = r * r * 3;
+    const id = MC.web_add_ball(wx, wy, r, m);
+    bodyIds.push(id);
+    if(bodyIds.length > 60){ bodyIds.shift(); }
+  }
+  function addBox(wx, wy){
+    const hw = 0.25 + Math.random() * 0.35;
+    const hh = 0.25 + Math.random() * 0.35;
+    const m = hw * hh * 4;
+    const id = MC.web_add_box(wx, wy, hw, hh, m);
+    bodyIds.push(id);
+    if(bodyIds.length > 60){ bodyIds.shift(); }
+  }
+
+  function step(){
+    const dt = 1/60;
+    MC.web_step(dt);
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // walls
+    ctx.fillStyle='#21262d';
+    ctx.strokeStyle='#30363d';
+    ctx.lineWidth=1;
+    for(const wid of wallIds){
+      const hw = MC.web_get_half_w(wid);
+      const hh = MC.web_get_half_h(wid);
+      const cx = toCanvasX(MC.web_get_x(wid));
+      const cy = toCanvasY(MC.web_get_y(wid));
+      ctx.fillRect(cx - hw*PX_PER_UNIT, cy - hh*PX_PER_UNIT, hw*2*PX_PER_UNIT, hh*2*PX_PER_UNIT);
+    }
+    // bodies
+    for(const id of bodyIds){
+      const t = MC.web_get_type(id);
+      const x = toCanvasX(MC.web_get_x(id));
+      const y = toCanvasY(MC.web_get_y(id));
+      if(t === 0){ // ball
+        const r = MC.web_get_radius(id) * PX_PER_UNIT;
+        const hue = 180 + (id * 37) % 120;
+        ctx.fillStyle = `hsla(${hue},70%,55%,0.85)`;
+        ctx.beginPath();
+        ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle = `hsla(${hue},80%,70%,0.9)`;
+        ctx.lineWidth = 1.5; ctx.stroke();
+        // velocity vector
+        const vx = MC.web_get_vx(id);
+        const vy = MC.web_get_vy(id);
+        ctx.strokeStyle = `hsla(${hue},80%,70%,0.3)`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x,y);
+        ctx.lineTo(x + vx*PX_PER_UNIT*0.15, y - vy*PX_PER_UNIT*0.15);
+        ctx.stroke();
+      } else if(t === 1){ // box
+        const hw = MC.web_get_half_w(id) * PX_PER_UNIT;
+        const hh = MC.web_get_half_h(id) * PX_PER_UNIT;
+        const ang = MC.web_get_angle(id);
+        const hue = 20 + (id * 29) % 40;
+        ctx.save();
+        ctx.translate(x,y);
+        ctx.rotate(-ang); // canvas y is flipped
+        ctx.fillStyle = `hsla(${hue},65%,50%,0.85)`;
+        ctx.fillRect(-hw,-hh,hw*2,hh*2);
+        ctx.strokeStyle = `hsla(${hue},75%,65%,0.9)`;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-hw,-hh,hw*2,hh*2);
+        ctx.restore();
+      }
+    }
+    // body count
+    ctx.fillStyle='#8b949e';
+    ctx.font='12px monospace';
+    ctx.fillText(`bodies: ${MC.web_body_count()}  (real MoonCollider wasm-js)`, 12, 20);
+  }
+
+  let last = performance.now();
+  function loop(now){
+    const dt = Math.min((now-last)/1000, 0.033);
+    last = now;
+    // fixed timestep accumulator for stable physics
+    step();
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // interaction
+  canvas.addEventListener('mousedown', e => {
+    const r = canvas.getBoundingClientRect();
+    const wx = toWorldX(e.clientX - r.left);
+    const wy = toWorldY(e.clientY - r.top);
+    if(mode === 'ball') addBall(wx, wy);
+    else addBox(wx, wy);
+  });
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    const r = canvas.getBoundingClientRect();
+    const wx = toWorldX(t.clientX - r.left);
+    const wy = toWorldY(t.clientY - r.top);
+    if(mode === 'ball') addBall(wx, wy);
+    else addBox(wx, wy);
+  }, {passive:false});
+
+  // buttons
+  function setMode(m){
+    mode = m;
+    document.getElementById('btnBall').classList.toggle('active', m==='ball');
+    document.getElementById('btnBox').classList.toggle('active', m==='box');
+  }
+  document.getElementById('btnBall').onclick = () => setMode('ball');
+  document.getElementById('btnBox').onclick = () => setMode('box');
+  document.getElementById('btnClear').onclick = () => { rebuildWalls(); };
+  document.getElementById('btnGravity').onclick = function(){
+    gravityOn = !gravityOn;
+    this.textContent = gravityOn ? '重力开' : '重力关';
+    this.classList.toggle('active', gravityOn);
+    MC.web_set_gravity(0, gravityOn ? -9.81 : 0);
+  };
+  document.getElementById('btnGravity').classList.add('active');
+
+  // seed initial bodies
+  for(let i=0;i<6;i++) addBall((Math.random()-.5)*worldW*0.6, (Math.random()-.3)*worldH*0.4);
+  for(let i=0;i<3;i++) addBox((Math.random()-.5)*worldW*0.5, (Math.random()-.3)*worldH*0.4);
+})();
+
+// scroll reveal
+(function(){
+  const els=document.querySelectorAll('section,.stats');
+  els.forEach(e=>e.classList.add('reveal'));
+  const io=new IntersectionObserver(entries=>{entries.forEach(en=>{if(en.isIntersecting)en.target.classList.add('in')})},{threshold:0.08});
+  els.forEach(e=>io.observe(e));
+})();
+</script>
 
 </body>
 </html>

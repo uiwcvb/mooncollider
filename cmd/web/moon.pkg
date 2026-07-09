@@ -1,0 +1,35 @@
+import {
+  "bubuki/mooncollider",
+}
+
+supported_targets = "js"
+
+options(
+  "is-main": true,
+  link: {
+    "js": {
+      "exports": [
+        "web_init",
+        "web_add_ball",
+        "web_add_box",
+        "web_add_wall",
+        "web_step",
+        "web_body_count",
+        "web_get_x",
+        "web_get_y",
+        "web_get_vx",
+        "web_get_vy",
+        "web_get_angle",
+        "web_get_radius",
+        "web_get_half_w",
+        "web_get_half_h",
+        "web_get_type",
+        "web_clear",
+        "web_set_gravity",
+        "web_apply_impulse",
+        "web_remove_body",
+      ],
+      "format": "iife",
+    },
+  },
+)

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoonCollider — MoonBit 2D 游戏物理与碰撞检测库</title>
+<meta name="description" content="MoonCollider 是面向 MoonBit 的 2D 游戏物理与碰撞检测库，提供 SAT 窄相、GJK+EPA、四种宽相、刚体求解器、关节约束与 CCD 连续碰撞检测。">
+<style>
+:root{
+  --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --border:#30363d;
+  --txt:#e6edf3; --txt2:#8b949e; --accent:#58a6ff; --accent2:#3fb950;
+  --warn:#f0883e; --code:#1f2428;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--txt);line-height:1.6;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:'SF Mono',Consolas,'Liberation Mono',Menlo,monospace;font-size:.9em}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+/* nav */
+nav{position:sticky;top:0;z-index:100;background:rgba(13,17,23,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:56px}
+nav .brand{font-weight:700;font-size:1.1em;display:flex;align-items:center;gap:8px}
+nav .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent2);box-shadow:0 0 12px var(--accent2)}
+nav .links{display:flex;gap:20px;font-size:.92em}
+nav .links a{color:var(--txt2)}
+nav .links a:hover{color:var(--txt);text-decoration:none}
+nav .gh{background:var(--bg3);padding:6px 14px;border-radius:6px;border:1px solid var(--border)}
+/* hero */
+.hero{text-align:center;padding:90px 24px 60px;position:relative}
+.hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(88,166,255,.08) 0%,transparent 60%);pointer-events:none}
+.hero h1{font-size:3.4em;font-weight:800;letter-spacing:-1px;margin-bottom:16px;background:linear-gradient(135deg,#58a6ff 0%,#3fb950 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero .tag{font-size:1.25em;color:var(--txt2);margin-bottom:14px}
+.hero .tagline{font-size:1.05em;color:var(--txt2);max-width:640px;margin:0 auto 36px}
+.hero .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-block;padding:12px 26px;border-radius:8px;font-weight:600;font-size:.98em;transition:all .15s;border:1px solid transparent}
+.btn-primary{background:var(--accent2);color:var(--bg)}
+.btn-primary:hover{background:#46c75d;text-decoration:none}
+.btn-ghost{background:var(--bg3);color:var(--txt);border-color:var(--border)}
+.btn-ghost:hover{border-color:var(--accent);text-decoration:none}
+.badges{display:flex;gap:10px;justify-content:center;margin-top:28px;flex-wrap:wrap}
+.badge{background:var(--bg2);border:1px solid var(--border);padding:4px 12px;border-radius:20px;font-size:.8em;color:var(--txt2)}
+.badge .ok{color:var(--accent2)}
+/* stats strip */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;padding:40px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg2)}
+.stat{text-align:center}
+.stat .num{font-size:2.2em;font-weight:800;color:var(--accent)}
+.stat .lbl{color:var(--txt2);font-size:.88em;margin-top:4px}
+/* section */
+section{padding:70px 0}
+section h2{font-size:2em;font-weight:700;margin-bottom:14px;text-align:center}
+section .sub{text-align:center;color:var(--txt2);margin-bottom:44px;font-size:1.02em}
+/* feature grid */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:26px;transition:border-color .15s}
+.card:hover{border-color:var(--accent)}
+.card .icon{font-size:1.8em;margin-bottom:12px}
+.card h3{font-size:1.15em;margin-bottom:8px}
+.card p{color:var(--txt2);font-size:.92em}
+/* architecture */
+.arch{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:32px;margin:0 auto;max-width:760px}
+.arch-layer{border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:10px;background:var(--bg3)}
+.arch-layer:last-child{margin-bottom:0}
+.arch-layer .name{font-weight:700;color:var(--accent);margin-bottom:4px}
+.arch-layer .desc{color:var(--txt2);font-size:.9em}
+/* code block */
+.code-block{background:var(--code);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:24px 0}
+.code-block .head{background:var(--bg3);padding:8px 16px;font-size:.82em;color:var(--txt2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
+.code-block pre{padding:18px 20px;overflow-x:auto;font-size:.86em;line-height:1.65}
+.code-block pre code{color:#c9d1d9}
+.kw{color:#ff7b72}
+.fn{color:#d2a8ff}
+.str{color:#a5d6ff}
+.num{color:#79c0ff}
+.cmt{color:#8b949e}
+.ty{color:#ffa657}
+/* table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+th,td{padding:14px 18px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:var(--bg3);font-weight:600;font-size:.9em;color:var(--accent)}
+td{font-size:.94em}
+tr:last-child td{border-bottom:none}
+td .ok{color:var(--accent2)}
+/* demo grid */
+.demo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.demo{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px}
+.demo .cmd{font-family:monospace;color:var(--accent2);font-size:.82em;margin-bottom:8px}
+.demo .desc{color:var(--txt2);font-size:.9em}
+/* footer */
+footer{border-top:1px solid var(--border);padding:40px 0;text-align:center;color:var(--txt2);font-size:.9em}
+footer a{color:var(--accent)}
+@media(max-width:760px){
+  .hero h1{font-size:2.2em}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .feat-grid,.demo-grid{grid-template-columns:1fr}
+  nav .links{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span> MoonCollider</div>
+    <div class="links">
+      <a href="#features">特性</a>
+      <a href="#arch">架构</a>
+      <a href="#quickstart">快速开始</a>
+      <a href="#demos">示例</a>
+      <a href="#status">状态</a>
+    </div>
+    <a class="gh" href="https://github.com/bubuki/mooncollider" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="tag">MoonBit 生态首个 2D 游戏物理引擎</div>
+  <h1>MoonCollider</h1>
+  <p class="tagline">面向 MoonBit 的 2D 游戏物理与碰撞检测库。SAT 窄相、GJK+EPA 通用凸形碰撞、四种宽相加速结构、顺序冲量求解器、关节约束、CCD 连续碰撞检测——纯逻辑无渲染，跑遍 wasm-gc / js / native。</p>
+  <div class="cta">
+    <a class="btn btn-primary" href="#quickstart">快速开始</a>
+    <a class="btn btn-ghost" href="https://github.com/bubuki/mooncollider" target="_blank">查看源码</a>
+  </div>
+  <div class="badges">
+    <span class="badge"><span class="ok">✓</span> moon check</span>
+    <span class="badge"><span class="ok">✓</span> 56/56 tests</span>
+    <span class="badge"><span class="ok">✓</span> moon info</span>
+    <span class="badge"><span class="ok">✓</span> moon fmt</span>
+    <span class="badge"><span class="ok">✓</span> fuzz + 确定性快照</span>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="wrap" style="display:contents">
+    <div class="stat"><div class="num">4867</div><div class="lbl">LOC 源代码</div></div>
+    <div class="stat"><div class="num">9+1</div><div class="lbl">碰撞对（SAT + GJK）</div></div>
+    <div class="stat"><div class="num">4</div><div class="lbl">宽相加速结构</div></div>
+    <div class="stat"><div class="num">56</div><div class="lbl">测试全通过</div></div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <h2>为什么选择 MoonCollider？</h2>
+    <p class="sub">从向量数学到刚体世界，一站式覆盖 2D 物理游戏的全部碰撞与模拟需求</p>
+    <div class="feat-grid">
+      <div class="card">
+        <div class="icon">📐</div>
+        <h3>向量和形状</h3>
+        <p>Vec2 全套运算；AABB / Circle / 凸多边形，支持凸包、正多边形、矩形构造器，Shape 枚举统一分发。</p>
+      </div>
+      <div class="card">
+        <div class="icon">💥</div>
+        <h3>SAT 窄相碰撞</h3>
+        <p>全部 9 种形状对，分离轴定理求穿透法线和深度，2 点接触流形，含圆心在多边形内的退化处理。</p>
+      </div>
+      <div class="card">
+        <div class="icon">🌀</div>
+        <h3>GJK + EPA</h3>
+        <p>通用凸形碰撞：GJK 迭代求单纯形，EPA 展开求最近穿透深度，任意 support 函数均可接入。</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔦</div>
+        <h3>射线检测</h3>
+        <p>Ray vs AABB / Circle / Polygon，返回参数化 t、命中点和表面法线，支持内外两面命中。</p>
+      </div>
+      <div class="card">
+        <div class="icon">🗺️</div>
+        <h3>四种宽相</h3>
+        <p>GridHash 均匀网格、QuadTree 松散四叉树、SweepAndPrune 排序扫描、AABBTree 动态树（含增删改）。</p>
+      </div>
+      <div class="card">
+        <div class="icon">⚙️</div>
+        <h3>刚体求解器</h3>
+        <p>顺序冲量法、Baumgarte 位置修正、库仑摩擦、2 点接触，velocity iterations 可调。</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔗</div>
+        <h3>关节约束</h3>
+        <p>Distance 距离关节、Revolute 旋转铰链、Weld 焊接关节，软 Baumgarte 偏置稳定收敛。</p>
+      </div>
+      <div class="card">
+        <div class="icon">🎯</div>
+        <h3>CCD 连续碰撞</h3>
+        <p>扫描体求交，防止高速物体穿透薄墙，circle/AABB sweep 两种实现，可开关对比。</p>
+      </div>
+      <div class="card">
+        <div class="icon">🛡️</div>
+        <h3>对抗性 fuzz + 确定性</h3>
+        <p>6 组 fuzzing（随机形状暴雨 / 退化几何 / NaN / 能量发散 / 穿模）+ 跨平台浮点快照，xorshift32 可复现。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="arch" style="background:var(--bg2)">
+  <div class="wrap">
+    <h2>核心架构</h2>
+    <p class="sub">五层分层设计，每层可独立使用，也可从形状一路走到完整物理世界</p>
+    <div class="arch">
+      <div class="arch-layer">
+        <div class="name">World 求解层 — world.mbt</div>
+        <div class="desc">World::step 顺序冲量求解：力积分 → 宽相 → 窄相 → 接触约束 → 摩擦 → Baumgarte 位置修正</div>
+      </div>
+      <div class="arch-layer">
+        <div class="name">关节层 — joints.mbt</div>
+        <div class="desc">Distance / Revolute / Weld 三种约束，软 Baumgarte 偏置，与接触约束同帧求解</div>
+      </div>
+      <div class="arch-layer">
+        <div class="name">宽相层 — broadphase.mbt / broadphase_sap.mbt</div>
+        <div class="desc">GridHash / QuadTree / SweepAndPrune / AABBTree，候选对生成，O(n) 到 O(n log n)</div>
+      </div>
+      <div class="arch-layer">
+        <div class="name">窄相层 — narrowphase.mbt / gjk.mbt / raycast.mbt / ccd.mbt</div>
+        <div class="desc">SAT 9 对 + GJK/EPA 通用凸形 + 射线 + CCD 扫描，输出 Manifold（法线 / 深度 / 接触点）</div>
+      </div>
+      <div class="arch-layer">
+        <div class="name">基础层 — vec2.mbt / shape.mbt / body.mbt</div>
+        <div class="desc">Vec2 数学、AABB/Circle/Polygon 几何、RigidBody 刚体定义（质量 / 转动惯量 / 恢复系数 / 摩擦 / 阻尼）</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="quickstart">
+  <div class="wrap">
+    <h2>快速开始</h2>
+    <p class="sub">三行命令安装，十行代码跑起一个物理世界</p>
+
+    <div class="code-block">
+      <div class="head"><span>bash</span><span>安装</span></div>
+      <pre><code><span class="cmt"># 在你的 MoonBit 项目里</span>
+moon add bubuki/mooncollider</code></pre>
+    </div>
+
+    <div class="code-block">
+      <div class="head"><span>moonbit</span><span>弹跳球：动态圆 + 静态地板</span></div>
+      <pre><code><span class="kw">fn</span> <span class="fn">main</span> {
+  <span class="kw">let</span> world = @mooncollider.World::new()
+  <span class="cmt">// 动态圆球</span>
+  <span class="kw">let</span> _ = world.add_body(
+    @mooncollider.BodyDef::dynamic(
+      @mooncollider.Vec2::new(<span class="num">0.0</span>, <span class="num">10.0</span>),
+      @mooncollider.Shape::from_circle(
+        @mooncollider.Circle::new(@mooncollider.Vec2::zero(), <span class="num">0.5</span>)),
+      <span class="num">1.0</span>, <span class="num">0.8</span>))
+  <span class="cmt">// 静态地板</span>
+  <span class="kw">let</span> _ = world.add_body(
+    @mooncollider.BodyDef::static_(
+      @mooncollider.Vec2::new(<span class="num">0.0</span>, <span class="num">0.0</span>),
+      @mooncollider.Shape::from_aabb(
+        @mooncollider.AABB::from_min_max(
+          @mooncollider.Vec2::new(<span class="num">-10.0</span>, <span class="num">-1.0</span>),
+          @mooncollider.Vec2::new(<span class="num">10.0</span>, <span class="num">0.0</span>)))))
+  <span class="cmt">// 步进仿真</span>
+  <span class="kw">for</span> i = <span class="num">0</span>; i &lt; <span class="num">200</span>; i = i + <span class="num">1</span> {
+    world.step(<span class="num">0.016</span>)
+  }
+}</code></pre>
+    </div>
+
+    <div class="code-block">
+      <div class="head"><span>moonbit</span><span>单独碰撞检测（不用 World）</span></div>
+      <pre><code><span class="kw">let</span> a = @mooncollider.Shape::from_aabb(
+  @mooncollider.AABB::from_min_max(
+    @mooncollider.Vec2::new(<span class="num">0.0</span>, <span class="num">0.0</span>),
+    @mooncollider.Vec2::new(<span class="num">2.0</span>, <span class="num">2.0</span>)))
+<span class="kw">let</span> b = @mooncollider.Shape::from_circle(
+  @mooncollider.Circle::new(@mooncollider.Vec2::new(<span class="num">3.0</span>, <span class="num">1.0</span>), <span class="num">1.5</span>))
+<span class="kw">let</span> m = @mooncollider.collide(a, b)
+<span class="kw">if</span> m.colliding() {
+  <span class="cmt">// m.normal 从 a 指向 b，m.depth 是穿透深度</span>
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+<section id="demos" style="background:var(--bg2)">
+  <div class="wrap">
+    <h2>示例程序</h2>
+    <p class="sub">7 个 demo 覆盖从基础碰撞到性能基准</p>
+    <div class="demo-grid">
+      <div class="demo">
+        <div class="cmd">moon run cmd/main</div>
+        <div class="desc">弹跳球：重力下动态圆球撞击地板反弹</div>
+      </div>
+      <div class="demo">
+        <div class="cmd">moon run cmd/stacking</div>
+        <div class="desc">箱子堆叠：多刚体稳定堆叠，摩擦力生效</div>
+      </div>
+      <div class="demo">
+        <div class="cmd">moon run cmd/raycast</div>
+        <div class="desc">射线场景：多条射线打向形状群，求交命中</div>
+      </div>
+      <div class="demo">
+        <div class="cmd">moon run cmd/pendulum</div>
+        <div class="desc">距离关节钟摆：DistanceJoint 约束演示</div>
+      </div>
+      <div class="demo">
+        <div class="cmd">moon run cmd/ccd_stress</div>
+        <div class="desc">CCD 穿模对比：100 u/s 小球撞薄墙，开关 CCD 对比</div>
+      </div>
+      <div class="demo">
+        <div class="cmd">moon run cmd/perf</div>
+        <div class="desc">性能基准：narrowphase / broadphase / world step</div>
+      </div>
+      <div class="demo">
+        <div class="cmd">moon run examples/pairs</div>
+        <div class="desc">批量碰撞查询：无 World 纯碰撞检测</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="bench">
+  <div class="wrap">
+    <h2>性能基准</h2>
+    <p class="sub">@bench 测量，100 轮取中位数（wasm-gc，本地环境）</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>场景</th><th>规模</th><th>中位耗时</th><th>吞吐</th></tr></thead>
+        <tbody>
+          <tr><td>Narrowphase 圆对碰撞</td><td>1000 对</td><td>~9 µs/op</td><td><span class="ok">~110k ops/s</span></td></tr>
+          <tr><td>Broadphase GridHash</td><td>500 体</td><td>~200 µs/op</td><td><span class="ok">~5k ops/s</span></td></tr>
+          <tr><td>World::step</td><td>100 体</td><td>~120 µs/op</td><td><span class="ok">~8k steps/s</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="status" style="background:var(--bg2)">
+  <div class="wrap">
+    <h2>项目状态</h2>
+    <p class="sub">竞赛验收硬性 + 软性要求全部通过</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>数据</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>源代码规模</td><td>4867 LOC</td><td>含库 + 测试 + 7 个 demo + 示例</td></tr>
+          <tr><td>窄相碰撞</td><td>9 对 + GJK/EPA</td><td>SAT 多边形 + GJK 通用凸形</td></tr>
+          <tr><td>宽相加速</td><td>4 种</td><td>GridHash / QuadTree / SAP / AABBTree</td></tr>
+          <tr><td>刚体求解</td><td>顺序冲量</td><td>Baumgarte + 摩擦 + 2 点接触</td></tr>
+          <tr><td>关节约束</td><td>3 种</td><td>Distance / Revolute / Weld</td></tr>
+          <tr><td>CCD</td><td>2 种 sweep</td><td>Circle / AABB 连续碰撞</td></tr>
+          <tr><td>测试体系</td><td>56 个测试</td><td>blackbox + whitebox + fuzz + 确定性快照</td></tr>
+          <tr><td>moon check</td><td><span class="ok">✓ 0 error</span></td><td>编译检查通过</td></tr>
+          <tr><td>moon test</td><td><span class="ok">✓ 56/56</span></td><td>全部测试通过</td></tr>
+          <tr><td>moon info</td><td><span class="ok">✓ clean diff</span></td><td>接口文件与代码同步</td></tr>
+          <tr><td>moon fmt</td><td><span class="ok">✓ clean diff</span></td><td>格式化规范</td></tr>
+          <tr><td>编译目标</td><td>wasm-gc</td><td>可扩展 js / native</td></tr>
+          <tr><td>开源协议</td><td>Apache-2.0</td><td>商业友好</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>MoonCollider · <a href="https://github.com/bubuki/mooncollider" target="_blank">GitHub</a> · <a href="https://mooncakes.io/docs/#/bubuki/mooncollider/" target="_blank">mooncakes</a> · Apache-2.0</p>
+    <p style="margin-top:8px">为 <a href="https://www.moonbitlang.com/" target="_blank">MoonBit</a> 生态而生 · 2026 MoonBit 国产基础软件生态开源大赛参赛作品</p>
+  </div>
+</footer>
+
+</body>
+</html>

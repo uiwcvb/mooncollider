@@ -3,7 +3,7 @@ name: Deploy site to GitHub Pages
 on:
   push:
     branches: [master]
-    paths: ['docs/**', 'cmd/web/**']
+    paths: ['docs/**', 'cmd/web/**', '.github/workflows/site.yml']
   workflow_dispatch:
 
 permissions:
@@ -24,9 +24,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup MoonBit
-        uses: moonbitlang/moonbit-doc-action@v1
-        with:
-          moonbit-version: latest
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
       - name: Build web JS
         run: moon build --target js cmd/web && cp _build/js/debug/build/cmd/web/web.js docs/mooncollider.js
       - name: Setup Pages

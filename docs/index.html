@@ -105,6 +105,7 @@ footer a{color:var(--accent)}
 .sandbox-head button:hover{border-color:var(--accent);color:var(--txt)}
 .sandbox-head button.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
 #sandbox{display:block;width:100%;height:360px;cursor:crosshair}
+#watermelon{display:block;width:100%;height:480px;cursor:pointer;background:#1a1f2e}
 .sandbox-hint{text-align:center;padding:8px;font-size:.8em;color:var(--txt2);background:var(--bg2);border-top:1px solid var(--border)}
 /* scroll reveal */
 .reveal{opacity:0;transform:translateY(28px);transition:opacity .6s ease,transform .6s ease}
@@ -391,6 +392,24 @@ moon add bubuki/mooncollider</code></pre>
   </div>
 </section>
 
+<section id="game" style="background:var(--bg2)">
+  <div class="wrap">
+    <h2>合成大西瓜 · MoonCollider 实战游戏</h2>
+    <p class="sub">用真实物理引擎做的完整小游戏：水果下落、碰撞、合并、堆叠</p>
+    <div class="sandbox-wrap">
+      <div class="sandbox-head">
+        <div class="live"><span class="pulse"></span> 由 MoonCollider 引擎驱动</div>
+        <div class="ctrl">
+          <span id="gameScore" style="color:var(--accent2);font-weight:bold;font-family:monospace">分数: 0</span>
+          <button id="btnGameRestart">重新开始</button>
+        </div>
+      </div>
+      <canvas id="watermelon"></canvas>
+      <div class="sandbox-hint">移动鼠标瞄准 · 点击放下水果 · 相同水果合并升级 · 别让水果溢出顶部！</div>
+    </div>
+  </div>
+</section>
+
 <footer>
   <div class="wrap">
     <p>MoonCollider · <a href="https://github.com/uiwcvb/mooncollider" target="_blank">GitHub</a> · <a href="https://mooncakes.io/docs/#/bubuki/mooncollider/" target="_blank">mooncakes</a> · Apache-2.0</p>
@@ -642,6 +661,273 @@ moon add bubuki/mooncollider</code></pre>
   // seed initial bodies
   for(let i=0;i<6;i++) addBall((Math.random()-.5)*worldW*0.6, (Math.random()-.3)*worldH*0.4);
   for(let i=0;i<3;i++) addBox((Math.random()-.5)*worldW*0.5, (Math.random()-.3)*worldH*0.4);
+})();
+
+// ===== 合成大西瓜 game =====
+(function(){
+  const MC = window.MoonCollider;
+  if(!MC || !MC.web_step) return;
+  const canvas = document.getElementById('watermelon');
+  const ctx = canvas.getContext('2d');
+  let W, H, DPR = window.devicePixelRatio || 1;
+
+  function resize(){
+    const r = canvas.getBoundingClientRect();
+    W = r.width; H = r.height;
+    canvas.width = W * DPR; canvas.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', () => { resize(); });
+
+  // Physics world coordinates: origin center, +y up, scale 30px/unit
+  const PX = 30;
+  const worldW = () => W / PX;
+  const worldH = () => H / PX;
+  const toCX = wx => W / 2 + wx * PX;
+  const toCY = wy => H - 30 - wy * PX; // bottom-aligned with 30px margin
+
+  // Fruit tiers: [radius_in_units, color, name]
+  const FRUITS = [
+    { r: 0.45, color: '#e74c3c', name: '樱桃' },
+    { r: 0.58, color: '#e67e22', name: '草莓' },
+    { r: 0.72, color: '#f1c40f', name: '葡萄' },
+    { r: 0.88, color: '#2ecc71', name: '橘子' },
+    { r: 1.05, color: '#1abc9c', name: '柠檬' },
+    { r: 1.25, color: '#3498db', name: '猕猴桃' },
+    { r: 1.48, color: '#9b59b6', name: '番茄' },
+    { r: 1.73, color: '#e84393', name: '桃子' },
+    { r: 2.0, color: '#fd79a8', name: '菠萝' },
+    { r: 2.3, color: '#00b894', name: '哈密瓜' },
+    { r: 2.65, color: '#00cec9', name: '西瓜' },
+  ];
+
+  let bodies = []; // {id, tier}
+  let score = 0;
+  let nextTier = 0;
+  let dropX = 0; // mouse position in world coords
+  let canDrop = true;
+  let dropCooldown = 0;
+  let gameOver = false;
+  let wallIds = [];
+  let frame = 0;
+
+  function rebuildWalls(){
+    MC.web_init();
+    bodies = [];
+    wallIds = [];
+    score = 0;
+    gameOver = false;
+    const w = worldW(), h = worldH();
+    // floor
+    wallIds.push(MC.web_add_wall(0, 0, w * 0.6, 0.3));
+    // left wall
+    wallIds.push(MC.web_add_wall(-w * 0.6, h * 0.5, 0.3, h * 0.6));
+    // right wall
+    wallIds.push(MC.web_add_wall(w * 0.6, h * 0.5, 0.3, h * 0.6));
+    MC.web_set_gravity(0, -25);
+  }
+  rebuildWalls();
+
+  function dropFruit(wx){
+    if(!canDrop || gameOver) return;
+    const tier = Math.min(nextTier, 4); // only drop tiers 0-4
+    const f = FRUITS[tier];
+    const id = MC.web_add_ball(wx, worldH() - 1.5, f.r, f.r * f.r * 3);
+    bodies.push({ id, tier });
+    canDrop = false;
+    dropCooldown = 40;
+    nextTier = Math.floor(Math.random() * 5);
+    updateScore();
+  }
+
+  function updateScore(){
+    document.getElementById('gameScore').textContent = '分数: ' + score;
+  }
+
+  // Check for merges: same-tier overlapping balls
+  function checkMerges(){
+    let merged = true;
+    while(merged){
+      merged = false;
+      for(let i = 0; i < bodies.length; i++){
+        for(let j = i + 1; j < bodies.length; j++){
+          if(bodies[i].tier !== bodies[j].tier) continue;
+          if(bodies[i].tier >= FRUITS.length - 1) continue; // max tier
+          const dx = MC.web_get_x(bodies[i].id) - MC.web_get_x(bodies[j].id);
+          const dy = MC.web_get_y(bodies[i].id) - MC.web_get_y(bodies[j].id);
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          const r1 = FRUITS[bodies[i].tier].r;
+          const r2 = FRUITS[bodies[j].tier].r;
+          if(dist < (r1 + r2) * 0.8){
+            // Merge: create new tier at midpoint
+            const mx = (MC.web_get_x(bodies[i].id) + MC.web_get_x(bodies[j].id)) / 2;
+            const my = (MC.web_get_y(bodies[i].id) + MC.web_get_y(bodies[j].id)) / 2;
+            const newTier = bodies[i].tier + 1;
+            const f = FRUITS[newTier];
+            // Mark old bodies for removal (can't actually remove, so just ignore them)
+            bodies[i].dead = true;
+            bodies[j].dead = true;
+            const newId = MC.web_add_ball(mx, my, f.r, f.r * f.r * 3);
+            bodies.push({ id: newId, tier: newTier });
+            score += (newTier + 1) * 10;
+            merged = true;
+            updateScore();
+            break;
+          }
+        }
+        if(merged) break;
+      }
+    }
+    // Remove dead bodies from tracking (they still exist in physics but we don't render them)
+    bodies = bodies.filter(b => !b.dead);
+  }
+
+  // Check game over: any body above the ceiling
+  function checkGameOver(){
+    const ceiling = worldH() - 0.5;
+    for(const b of bodies){
+      if(MC.web_get_y(b.id) > ceiling && Math.abs(MC.web_get_vy(b.id)) < 0.5){
+        gameOver = true;
+        return;
+      }
+    }
+  }
+
+  function draw(){
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw container walls
+    ctx.fillStyle = '#21262d';
+    for(const wid of wallIds){
+      const hw = MC.web_get_half_w(wid) * PX;
+      const hh = MC.web_get_half_h(wid) * PX;
+      const cx = toCX(MC.web_get_x(wid));
+      const cy = toCY(MC.web_get_y(wid));
+      ctx.fillRect(cx - hw, cy - hh, hw * 2, hh * 2);
+    }
+
+    // Draw drop preview
+    if(!gameOver){
+      const f = FRUITS[Math.min(nextTier, 4)];
+      const px = toCX(dropX);
+      const py = toCY(worldH() - 1.5);
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px, 0);
+      ctx.lineTo(px, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = f.color + '88';
+      ctx.beginPath();
+      ctx.arc(px, py, f.r * PX, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = f.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Draw fruits
+    for(const b of bodies){
+      const f = FRUITS[b.tier];
+      const x = toCX(MC.web_get_x(b.id));
+      const y = toCY(MC.web_get_y(b.id));
+      const r = f.r * PX;
+      // shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.arc(x + 2, y + 2, r, 0, Math.PI * 2);
+      ctx.fill();
+      // body
+      const grad = ctx.createRadialGradient(x - r*0.3, y - r*0.3, 0, x, y, r);
+      grad.addColorStop(0, f.color);
+      grad.addColorStop(1, f.color + '88');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = f.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // tier label
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${Math.max(10, r * 0.5)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(b.tier + 1, x, y);
+    }
+
+    // Game over overlay
+    if(gameOver){
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('游戏结束！', W/2, H/2 - 20);
+      ctx.font = '18px sans-serif';
+      ctx.fillText('最终分数: ' + score, W/2, H/2 + 15);
+      ctx.fillText('点击"重新开始"再玩一次', W/2, H/2 + 45);
+    }
+  }
+
+  function loop(){
+    frame++;
+    if(!gameOver){
+      MC.web_step(1/60);
+      // Cooldown for dropping
+      if(!canDrop){
+        dropCooldown--;
+        if(dropCooldown <= 0) canDrop = true;
+      }
+      // Check merges every few frames
+      if(frame % 8 === 0) checkMerges();
+      // Check game over
+      if(frame % 30 === 0) checkGameOver();
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // Mouse interaction
+  canvas.addEventListener('mousemove', e => {
+    const r = canvas.getBoundingClientRect();
+    dropX = (e.clientX - r.left - W/2) / PX;
+    // Clamp to container
+    const limit = worldW() * 0.6 - FRUITS[Math.min(nextTier, 4)].r - 0.3;
+    dropX = Math.max(-limit, Math.min(limit, dropX));
+  });
+  canvas.addEventListener('click', e => {
+    if(gameOver) return;
+    const r = canvas.getBoundingClientRect();
+    let wx = (e.clientX - r.left - W/2) / PX;
+    const limit = worldW() * 0.6 - FRUITS[Math.min(nextTier, 4)].r - 0.3;
+    wx = Math.max(-limit, Math.min(limit, wx));
+    dropFruit(wx);
+  });
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if(gameOver) return;
+    const t = e.touches[0];
+    const r = canvas.getBoundingClientRect();
+    let wx = (t.clientX - r.left - W/2) / PX;
+    const limit = worldW() * 0.6 - FRUITS[Math.min(nextTier, 4)].r - 0.3;
+    wx = Math.max(-limit, Math.min(limit, wx));
+    dropFruit(wx);
+  }, {passive: false});
+
+  document.getElementById('btnGameRestart').onclick = () => {
+    rebuildWalls();
+    nextTier = Math.floor(Math.random() * 5);
+    canDrop = true;
+    updateScore();
+  };
+
+  nextTier = Math.floor(Math.random() * 5);
+  updateScore();
 })();
 
 // scroll reveal

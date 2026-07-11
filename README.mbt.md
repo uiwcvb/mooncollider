@@ -9,11 +9,11 @@
 **A 2D game physics and collision detection library for [MoonBit](https://www.moonbitlang.com/).**
 
 MoonCollider provides vector math, shape geometry, narrowphase collision
-detection (SAT for convex polygons), raycasting, broadphase acceleration
-(uniform grid hash + quadtree), and a lightweight rigid-body simulator with
-gravity, impulses, and positional correction. It is pure logic — no
-rendering, no native backend — so it runs on every MoonBit target (wasm-gc,
-js, native).
+detection (SAT + GJK/EPA), raycasting, four broadphase acceleration
+structures, a sequential-impulse rigid-body solver with friction and
+positional correction, joint constraints (distance/revolute/weld), and
+continuous collision detection (CCD). It is pure logic — no rendering —
+so it runs on every MoonBit target (wasm-gc, js, native).
 
 ## Features
 
@@ -21,27 +21,26 @@ js, native).
   rotate/perp.
 - **Shapes** — `AABB`, `Circle`, convex `Polygon` (with `convex_hull`,
   `regular`, `box` builders), and a `Shape` enum for generic dispatch.
-- **Narrowphase** — pairwise collision with contact manifolds (normal, depth,
-  contact point):
-  - AABB vs AABB
-  - Circle vs Circle
-  - AABB vs Circle (including circle-center-inside-box)
-  - Polygon vs Polygon (Separating Axis Theorem)
-  - AABB vs Polygon
-  - Circle vs Polygon (including center-inside-polygon)
-  - Generic `collide(a, b)` dispatch over all 9 pairs
+- **Narrowphase** — pairwise collision with 2-point contact manifolds:
+  - All 9 shape pairs (AABB/Circle/Polygon) via Separating Axis Theorem
   - `collide_gjk(a, b)` — GJK + EPA for arbitrary convex shapes via support functions
 - **Raycast** — ray vs AABB / Circle / Polygon, returning parametric `t`,
   hit point, and surface normal.
-- **Broadphase** — three options:
+- **Broadphase** — four options:
   - `GridHash` — uniform spatial hash grid
   - `QuadTree` — loose quadtree
   - `SweepAndPrune` — single-axis sort and sweep
-  - `AABBTree` — dynamic AABB tree with volume-minimizing insertion
+  - `AABBTree` — dynamic AABB tree with insert/remove/update
 - **Rigid body** — `RigidBody` with mass, inertia, restitution, friction,
   damping, static/dynamic types; `World::step` integrates forces, runs
-  broadphase + narrowphase, and resolves collisions with normal impulses,
-  Coulomb friction impulses, and Baumgarte positional correction.
+  broadphase + narrowphase, and resolves collisions with sequential
+  impulses, Coulomb friction, and Baumgarte positional correction.
+- **Joints** — `Distance`, `Revolute`, and `Weld` constraints with soft
+  Baumgarte bias.
+- **CCD** — continuous collision detection via sweep tests (Circle/AABB)
+  to prevent tunneling at high velocities.
+- **Body removal** — `World::remove_body(id)` marks bodies inactive;
+  inactive bodies are skipped in all simulation phases.
 
 ## Installation
 
@@ -138,6 +137,9 @@ let pairs = grid.pairs() // Array[(Int, Int)], each (a, b) with a < b
 moon run cmd/main        # bouncing ball under gravity
 moon run cmd/stacking    # column of boxes settling into a stack
 moon run cmd/raycast     # rays cast at a scene of shapes
+moon run cmd/pendulum    # distance-joint pendulum
+moon run cmd/ccd_stress  # CCD tunneling comparison
+moon run cmd/perf        # performance benchmarks
 moon run examples/pairs  # batch collision queries without a world
 ```
 
@@ -148,8 +150,16 @@ moon test
 ```
 
 The suite covers vector math, all shape operations, every narrowphase pair,
-GJK+EPA, raycasting, all four broadphase structures, and the rigid-body world
-(gravity, bounce, friction, stacking).
+GJK+EPA, raycasting, all four broadphase structures, the rigid-body world
+(gravity, bounce, friction, stacking), joints, CCD, plus adversarial fuzz
+testing (random shape storms, degenerate geometry, NaN/Inf detection, energy
+divergence checks) and cross-platform determinism snapshots.
+
+## Website
+
+An interactive physics sandbox powered by the real MoonCollider engine
+(compiled to JavaScript) is at **<https://uiwcvb.github.io/mooncollider/>**.
+Click to add balls/boxes, drag to throw, toggle gravity.
 
 ## Verification
 
@@ -181,13 +191,20 @@ mooncollider/
   broadphase_sap.mbt           SweepAndPrune + AABBTree
   body.mbt                     RigidBody + BodyDef
   world.mbt                    World::step + collision resolution
+  joints.mbt                   Distance / Revolute / Weld joints
+  ccd.mbt                      continuous collision detection
   mooncollider_test.mbt        blackbox tests (public API)
   mooncollider_wbtest.mbt      whitebox tests (internal helpers)
+  mooncollider_fuzz_wbtest.mbt adversarial fuzz testing
   cmd/main/                    bounce demo
   cmd/stacking/                stacking demo
   cmd/raycast/                 raycast demo
+  cmd/pendulum/                pendulum demo
+  cmd/ccd_stress/              CCD tunneling comparison
+  cmd/perf/                    performance benchmarks
+  cmd/web/                     JS bindings for the website sandbox
   examples/pairs/              batch collision query example
-  docs/                        design notes + roadmap
+  docs/                        website + design notes
 ```
 
 ## License

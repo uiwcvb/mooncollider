@@ -45,7 +45,7 @@ so it runs on every MoonBit target (wasm-gc, js, native).
 ## Installation
 
 ```bash
-moon add bubuki/mooncollider
+moon add uiwcvb/mooncollider
 ```
 
 ## Quick start

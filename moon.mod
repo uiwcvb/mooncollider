@@ -1,4 +1,4 @@
-name = "bubuki/mooncollider"
+name = "uiwcvb/mooncollider"
 
 version = "0.1.0"
 

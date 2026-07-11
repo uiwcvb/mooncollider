@@ -427,6 +427,7 @@ moon add bubuki/mooncollider</code></pre>
     document.querySelector('.sandbox-hint').textContent = '物理引擎加载失败，请刷新页面';
     return;
   }
+  MC.web_use_world(0); // sandbox = world 0
   const canvas=document.getElementById('sandbox');
   const ctx=canvas.getContext('2d');
   let W,H,DPR=window.devicePixelRatio||1;
@@ -667,6 +668,7 @@ moon add bubuki/mooncollider</code></pre>
 (function(){
   const MC = window.MoonCollider;
   if(!MC || !MC.web_step) return;
+  MC.web_use_world(1); // game = world 1 (separate from sandbox)
   const canvas = document.getElementById('watermelon');
   const ctx = canvas.getContext('2d');
   let W, H, DPR = window.devicePixelRatio || 1;
@@ -759,7 +761,8 @@ moon add bubuki/mooncollider</code></pre>
           const dist = Math.sqrt(dx*dx + dy*dy);
           const r1 = FRUITS[bodies[i].tier].r;
           const r2 = FRUITS[bodies[j].tier].r;
-          if(dist < (r1 + r2) * 0.8){
+          // Merge when fruits are actually touching (dist <= sum of radii)
+          if(dist <= r1 + r2){
             // Merge: create new tier at midpoint
             const mx = (MC.web_get_x(bodies[i].id) + MC.web_get_x(bodies[j].id)) / 2;
             const my = (MC.web_get_y(bodies[i].id) + MC.web_get_y(bodies[j].id)) / 2;

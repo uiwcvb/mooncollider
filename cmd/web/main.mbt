@@ -2,24 +2,41 @@
 // so that JavaScript / Canvas can drive the real MoonBit physics engine.
 // This is NOT a mock — `web_step` calls `World::step` which runs the full
 // sequential-impulse solver, SAT narrowphase, broadphase, friction, joints.
+// Supports multiple independent worlds (sandbox + game) via world_id.
 
 ///|
-struct WorldHolder {
+struct WorldSlot {
   mut w : @mooncollider.World
-  mut drag_id : Int // -1 = not dragging
+  mut drag_id : Int
   mut drag_target : @mooncollider.Vec2
 }
 
 ///|
-let holder : WorldHolder = WorldHolder::new()
+let slots : Array[WorldSlot] = []
 
 ///|
-fn WorldHolder::new() -> WorldHolder {
+struct CurrentHolder {
+  mut v : Int
+}
+
+///|
+let current : CurrentHolder = { v: 0 }
+
+///|
+fn WorldSlot::new() -> WorldSlot {
   {
     w: @mooncollider.World::new(),
     drag_id: -1,
     drag_target: @mooncollider.Vec2::zero(),
   }
+}
+
+///|
+fn slot() -> WorldSlot {
+  while slots.length() <= current.v {
+    slots.push(WorldSlot::new())
+  }
+  slots[current.v]
 }
 
 ///|
@@ -37,6 +54,10 @@ extern "js" fn js_set(obj : JSRef, key : String, val : JSRef) -> Unit =
 ///|
 extern "js" fn js_wrap0(f : () -> Unit) -> JSRef =
   #|(f) => () => f()
+
+///|
+extern "js" fn js_wrap1i(f : (Int) -> Unit) -> JSRef =
+  #|(f) => (a) => f(a)
 
 ///|
 extern "js" fn js_wrap0i(f : () -> Int) -> JSRef =
@@ -81,22 +102,20 @@ extern "js" fn js_wrap2di(f : (Double, Double) -> Int) -> JSRef =
   #|(f) => (a, b) => f(a, b)
 
 ///|
-extern "js" fn js_wrap1i(f : (Int) -> Unit) -> JSRef =
-  #|(f) => (a) => f(a)
-
-///|
-extern "js" fn js_wrap2d1i(f : (Int, Double, Double) -> Unit) -> JSRef =
-  #|(f) => (a, b, c) => f(a, b, c)
+fn web_use_world(id : Int) -> Unit {
+  current.v = id
+  let _ = slot()
+}
 
 ///|
 fn web_init() -> Unit {
-  holder.w = @mooncollider.World::new()
-  holder.drag_id = -1
+  slot().w = @mooncollider.World::new()
+  slot().drag_id = -1
 }
 
 ///|
 fn web_add_ball(x : Double, y : Double, radius : Double, mass : Double) -> Int {
-  holder.w.add_body(
+  slot().w.add_body(
     @mooncollider.BodyDef::dynamic(
       @mooncollider.Vec2::new(x, y),
       @mooncollider.Shape::from_circle(
@@ -116,7 +135,7 @@ fn web_add_box(
   hh : Double,
   mass : Double,
 ) -> Int {
-  holder.w.add_body(
+  slot().w.add_body(
     @mooncollider.BodyDef::dynamic(
       @mooncollider.Vec2::new(x, y),
       @mooncollider.Shape::from_aabb(
@@ -133,7 +152,7 @@ fn web_add_box(
 
 ///|
 fn web_add_wall(x : Double, y : Double, hw : Double, hh : Double) -> Int {
-  holder.w.add_body(
+  slot().w.add_body(
     @mooncollider.BodyDef::static_(
       @mooncollider.Vec2::new(x, y),
       @mooncollider.Shape::from_aabb(
@@ -149,11 +168,11 @@ fn web_add_wall(x : Double, y : Double, hw : Double, hh : Double) -> Int {
 ///|
 fn web_step(dt : Double) -> Unit {
   // Apply spring force for active drag (mouse joint)
-  if holder.drag_id >= 0 {
-    let b = holder.w.body(holder.drag_id)
-    if not(b.is_static()) {
-      let dx = holder.drag_target.x - b.position.x
-      let dy = holder.drag_target.y - b.position.y
+  if slot().drag_id >= 0 {
+    let b = slot().w.body(slot().drag_id)
+    if !b.is_static() {
+      let dx = slot().drag_target.x - b.position.x
+      let dy = slot().drag_target.y - b.position.y
       // spring: F = k * displacement - c * velocity
       let k = 40.0 * b.mass
       let c = 10.0 * b.mass
@@ -162,42 +181,42 @@ fn web_step(dt : Double) -> Unit {
       b.apply_force(@mooncollider.Vec2::new(fx, fy))
     }
   }
-  holder.w.step(dt)
+  slot().w.step(dt)
 }
 
 ///|
 fn web_body_count() -> Int {
-  holder.w.body_count()
+  slot().w.body_count()
 }
 
 ///|
 fn web_get_x(id : Int) -> Double {
-  holder.w.body(id).position.x
+  slot().w.body(id).position.x
 }
 
 ///|
 fn web_get_y(id : Int) -> Double {
-  holder.w.body(id).position.y
+  slot().w.body(id).position.y
 }
 
 ///|
 fn web_get_vx(id : Int) -> Double {
-  holder.w.body(id).velocity.x
+  slot().w.body(id).velocity.x
 }
 
 ///|
 fn web_get_vy(id : Int) -> Double {
-  holder.w.body(id).velocity.y
+  slot().w.body(id).velocity.y
 }
 
 ///|
 fn web_get_angle(id : Int) -> Double {
-  holder.w.body(id).angle
+  slot().w.body(id).angle
 }
 
 ///|
 fn web_get_radius(id : Int) -> Double {
-  let b = holder.w.body(id)
+  let b = slot().w.body(id)
   match b.world_shape() {
     @mooncollider.Shape::Circle(c) => c.radius
     _ => 0.0
@@ -206,7 +225,7 @@ fn web_get_radius(id : Int) -> Double {
 
 ///|
 fn web_get_half_w(id : Int) -> Double {
-  let b = holder.w.body(id)
+  let b = slot().w.body(id)
   match b.world_shape() {
     @mooncollider.Shape::AABB(a) => a.half.x
     _ => 0.0
@@ -215,7 +234,7 @@ fn web_get_half_w(id : Int) -> Double {
 
 ///|
 fn web_get_half_h(id : Int) -> Double {
-  let b = holder.w.body(id)
+  let b = slot().w.body(id)
   match b.world_shape() {
     @mooncollider.Shape::AABB(a) => a.half.y
     _ => 0.0
@@ -225,7 +244,7 @@ fn web_get_half_h(id : Int) -> Double {
 ///|
 fn web_get_type(id : Int) -> Int {
   // 0 = ball (circle), 1 = box (aabb), 2 = wall (static)
-  let b = holder.w.body(id)
+  let b = slot().w.body(id)
   if b.is_static() {
     2
   } else {
@@ -243,26 +262,26 @@ fn web_clear() -> Unit {
 
 ///|
 fn web_set_gravity(x : Double, y : Double) -> Unit {
-  holder.w.set_gravity(@mooncollider.Vec2::new(x, y))
+  slot().w.set_gravity(@mooncollider.Vec2::new(x, y))
 }
 
 ///|
 fn web_apply_impulse(id : Int, ix : Double, iy : Double) -> Unit {
-  holder.w.body(id).apply_linear_impulse(@mooncollider.Vec2::new(ix, iy))
+  slot().w.body(id).apply_linear_impulse(@mooncollider.Vec2::new(ix, iy))
 }
 
 ///|
 fn web_remove_body(id : Int) -> Unit {
-  holder.w.remove_body(id)
+  slot().w.remove_body(id)
 }
 
 ///|
 fn web_pick_body(x : Double, y : Double) -> Int {
   // Returns the topmost dynamic body containing (x,y), or -1.
-  let n = holder.w.body_count()
+  let n = slot().w.body_count()
   let mut found = -1
   for i = 0; i < n; i = i + 1 {
-    let b = holder.w.body(i)
+    let b = slot().w.body(i)
     if b.is_static() {
       continue
     }
@@ -289,24 +308,25 @@ fn web_pick_body(x : Double, y : Double) -> Int {
 
 ///|
 fn web_drag_start(id : Int, x : Double, y : Double) -> Unit {
-  holder.drag_id = id
-  holder.drag_target = @mooncollider.Vec2::new(x, y)
+  slot().drag_id = id
+  slot().drag_target = @mooncollider.Vec2::new(x, y)
 }
 
 ///|
 fn web_drag_to(x : Double, y : Double) -> Unit {
-  holder.drag_target = @mooncollider.Vec2::new(x, y)
+  slot().drag_target = @mooncollider.Vec2::new(x, y)
 }
 
 ///|
 fn web_drop() -> Unit {
-  holder.drag_id = -1
+  slot().drag_id = -1
 }
 
 ///|
 fn register_all() -> Unit {
   let g = js_global("MoonCollider")
   js_set(g, "web_init", js_wrap0(web_init))
+  js_set(g, "web_use_world", js_wrap1i(web_use_world))
   js_set(g, "web_add_ball", js_wrap4di(web_add_ball))
   js_set(g, "web_add_box", js_wrap5di(web_add_box))
   js_set(g, "web_add_wall", js_wrap4di(web_add_wall))
@@ -333,6 +353,6 @@ fn register_all() -> Unit {
 
 ///|
 fn main {
-  holder.w = @mooncollider.World::new()
+  let _ = slot()
   register_all()
 }

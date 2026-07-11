@@ -10,6 +10,7 @@ options(
     "js": {
       "exports": [
         "web_init",
+        "web_use_world",
         "web_add_ball",
         "web_add_box",
         "web_add_wall",

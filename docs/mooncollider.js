@@ -1,4 +1,7 @@
 (() => {
+  function _M0TP46bubuki12mooncollider3cmd3web13CurrentHolder(param0) {
+    this.v = param0;
+  }
   const _M0FPB12random__seed = () => {
     if (globalThis.crypto?.getRandomValues) {
       const array = new Uint32Array(1);
@@ -184,7 +187,7 @@
     this.angular_damping = param8;
     this.gravity_scale = param9;
   }
-  function _M0TP46bubuki12mooncollider3cmd3web11WorldHolder(param0, param1, param2) {
+  function _M0TP46bubuki12mooncollider3cmd3web9WorldSlot(param0, param1, param2) {
     this.w = param0;
     this.drag_id = param1;
     this.drag_target = param2;
@@ -192,6 +195,7 @@
   const _M0FP46bubuki12mooncollider3cmd3web10js__global = (name) => (globalThis[name] = globalThis[name] || {});
   const _M0FP46bubuki12mooncollider3cmd3web7js__set = (obj, key, val) => { obj[key] = val };
   const _M0FP46bubuki12mooncollider3cmd3web9js__wrap0 = (f) => () => f();
+  const _M0FP46bubuki12mooncollider3cmd3web10js__wrap1i = (f) => (a) => f(a);
   const _M0FP46bubuki12mooncollider3cmd3web10js__wrap0i = (f) => () => f();
   const _M0FP46bubuki12mooncollider3cmd3web10js__wrap1d = (f) => (a) => f(a);
   const _M0FP46bubuki12mooncollider3cmd3web10js__wrapid = (f) => (a) => f(a);
@@ -202,7 +206,8 @@
   const _M0FP46bubuki12mooncollider3cmd3web11js__wrap2du = (f) => (a, b) => f(a, b);
   const _M0FP46bubuki12mooncollider3cmd3web12js__wrap3idu = (f) => (a, b, c) => f(a, b, c);
   const _M0FP46bubuki12mooncollider3cmd3web11js__wrap2di = (f) => (a, b) => f(a, b);
-  const _M0FP46bubuki12mooncollider3cmd3web6holder = _M0MP46bubuki12mooncollider3cmd3web11WorldHolder3new();
+  const _M0FP46bubuki12mooncollider3cmd3web5slots = [];
+  const _M0FP46bubuki12mooncollider3cmd3web7current = new _M0TP46bubuki12mooncollider3cmd3web13CurrentHolder(0);
   const _M0FPB4seed = _M0FPB12random__seed();
   function _M0FPB4rotl(x, r) {
     return x << r | (x >>> (32 - r | 0) | 0);
@@ -276,7 +281,7 @@
     _M0MPB6Hasher7combineGUiiEE(h, self);
     return _M0MPB6Hasher8finalize(h);
   }
-  function _M0MPC15array5Array4pushGRP26bubuki12mooncollider9RigidBodyE(self, value) {
+  function _M0MPC15array5Array4pushGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self, value) {
     _M0MPB7JSArray4push(self, value);
   }
   function _M0MPC15array5Array4pushGiE(self, value) {
@@ -818,7 +823,7 @@
   function _M0MPC16double6Double3max(self, other) {
     return _M0MPC16double6Double7is__nan(self) ? other : _M0MPC16double6Double7is__nan(other) ? self : self > other ? self : other;
   }
-  function _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self, index) {
+  function _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self, index) {
     const len = self.length;
     return index >= 0 && index < len ? self[index] : $panic();
   }
@@ -890,12 +895,12 @@
     while (true) {
       const i = _tmp;
       if (i < n) {
-        const a = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(p.vertices, i);
+        const a = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(p.vertices, i);
         const _tmp$2 = p.vertices;
         if (n === 0) {
           $panic();
         }
-        const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(_tmp$2, (i + 1 | 0) % n | 0);
+        const b = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(_tmp$2, (i + 1 | 0) % n | 0);
         const cross = Math.abs(_M0MP26bubuki12mooncollider4Vec25cross(a, b));
         numerator.val = numerator.val + cross * (_M0MP26bubuki12mooncollider4Vec23dot(a, a) + _M0MP26bubuki12mooncollider4Vec23dot(a, b) + _M0MP26bubuki12mooncollider4Vec23dot(b, b));
         denominator.val = denominator.val + cross;
@@ -978,11 +983,11 @@
     while (true) {
       const i = _tmp;
       if (i < n) {
-        const a = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(vertices, i);
+        const a = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(vertices, i);
         if (n === 0) {
           $panic();
         }
-        const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(vertices, (i + 1 | 0) % n | 0);
+        const b = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(vertices, (i + 1 | 0) % n | 0);
         const edge = _M0MP26bubuki12mooncollider4Vec23sub(b, a);
         const normal = _M0MP26bubuki12mooncollider4Vec29normalize(_M0MP26bubuki12mooncollider4Vec23new(edge.y, -edge.x));
         _M0MPC15array5Array3setGRP26bubuki12mooncollider4Vec2E(normals, i, normal);
@@ -1041,9 +1046,9 @@
     while (true) {
       const i = _tmp;
       if (i < n) {
-        const v = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(p.vertices, i);
+        const v = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(p.vertices, i);
         const rotated = _M0MP26bubuki12mooncollider4Vec26rotate(v, self.angle);
-        _M0MPC15array5Array4pushGRP26bubuki12mooncollider9RigidBodyE(verts, _M0MP26bubuki12mooncollider4Vec23add(rotated, self.position));
+        _M0MPC15array5Array4pushGRP46bubuki12mooncollider3cmd3web9WorldSlotE(verts, _M0MP26bubuki12mooncollider4Vec23add(rotated, self.position));
         _tmp = i + 1 | 0;
         continue;
       } else {
@@ -1065,15 +1070,15 @@
     if (n === 0) {
       return _M0MP26bubuki12mooncollider4AABB3new(_M0MP26bubuki12mooncollider4Vec24zero(), _M0MP26bubuki12mooncollider4Vec24zero());
     }
-    const lo_x = new _M0TPB8MutLocalGdE(_M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.vertices, 0).x);
-    const hi_x = new _M0TPB8MutLocalGdE(_M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.vertices, 0).x);
-    const lo_y = new _M0TPB8MutLocalGdE(_M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.vertices, 0).y);
-    const hi_y = new _M0TPB8MutLocalGdE(_M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.vertices, 0).y);
+    const lo_x = new _M0TPB8MutLocalGdE(_M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.vertices, 0).x);
+    const hi_x = new _M0TPB8MutLocalGdE(_M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.vertices, 0).x);
+    const lo_y = new _M0TPB8MutLocalGdE(_M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.vertices, 0).y);
+    const hi_y = new _M0TPB8MutLocalGdE(_M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.vertices, 0).y);
     let _tmp = 1;
     while (true) {
       const i = _tmp;
       if (i < n) {
-        const p = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.vertices, i);
+        const p = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.vertices, i);
         if (p.x < lo_x.val) {
           lo_x.val = p.x;
         }
@@ -1171,18 +1176,18 @@
   function _M0MP26bubuki12mooncollider5World9add__body(self, def) {
     const id = self.bodies.length;
     const body = _M0MP26bubuki12mooncollider9RigidBody9from__def(id, def);
-    _M0MPC15array5Array4pushGRP26bubuki12mooncollider9RigidBodyE(self.bodies, body);
+    _M0MPC15array5Array4pushGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.bodies, body);
     return id;
   }
   function _M0MP26bubuki12mooncollider5World4body(self, id) {
-    return _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, id);
+    return _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.bodies, id);
   }
   function _M0MP26bubuki12mooncollider5World11body__count(self) {
     return self.bodies.length;
   }
   function _M0MP26bubuki12mooncollider5World12remove__body(self, id) {
     if (id >= 0 && id < self.bodies.length) {
-      _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, id).alive = false;
+      _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.bodies, id).alive = false;
       return;
     } else {
       return;
@@ -1299,8 +1304,8 @@
     while (true) {
       const i = _tmp;
       if (i < n) {
-        sx.val = sx.val + _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(p.vertices, i).x;
-        sy.val = sy.val + _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(p.vertices, i).y;
+        sx.val = sx.val + _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(p.vertices, i).x;
+        sy.val = sy.val + _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(p.vertices, i).y;
         _tmp = i + 1 | 0;
         continue;
       } else {
@@ -1311,13 +1316,13 @@
   }
   function _M0FP26bubuki12mooncollider7project(p, axis) {
     const n = p.vertices.length;
-    const lo = new _M0TPB8MutLocalGdE(_M0MP26bubuki12mooncollider4Vec23dot(_M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(p.vertices, 0), axis));
+    const lo = new _M0TPB8MutLocalGdE(_M0MP26bubuki12mooncollider4Vec23dot(_M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(p.vertices, 0), axis));
     const hi = new _M0TPB8MutLocalGdE(lo.val);
     let _tmp = 1;
     while (true) {
       const i = _tmp;
       if (i < n) {
-        const v = _M0MP26bubuki12mooncollider4Vec23dot(_M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(p.vertices, i), axis);
+        const v = _M0MP26bubuki12mooncollider4Vec23dot(_M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(p.vertices, i), axis);
         if (v < lo.val) {
           lo.val = v;
         }
@@ -1340,7 +1345,7 @@
     while (true) {
       const i = _tmp;
       if (i < n) {
-        const axis = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(a.normals, i);
+        const axis = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(a.normals, i);
         let pa;
         let qa;
         _L: {
@@ -1466,12 +1471,12 @@
     while (true) {
       const i = _tmp;
       if (i < n) {
-        const a = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(poly.vertices, i);
+        const a = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(poly.vertices, i);
         const _tmp$2 = poly.vertices;
         if (n === 0) {
           $panic();
         }
-        const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(_tmp$2, (i + 1 | 0) % n | 0);
+        const b = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(_tmp$2, (i + 1 | 0) % n | 0);
         const c = _M0FP26bubuki12mooncollider6cross3(a, b, p);
         if (c < 0) {
           return false;
@@ -1489,18 +1494,18 @@
       return _M0MP26bubuki12mooncollider8Manifold4none();
     }
     const best_dist_sq = new _M0TPB8MutLocalGdE(1e+30);
-    const best_point = new _M0TPB8MutLocalGRP26bubuki12mooncollider4Vec2E(_M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(b.vertices, 0));
+    const best_point = new _M0TPB8MutLocalGRP26bubuki12mooncollider4Vec2E(_M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(b.vertices, 0));
     const n = b.vertices.length;
     let _tmp = 0;
     while (true) {
       const i = _tmp;
       if (i < n) {
-        const p1 = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(b.vertices, i);
+        const p1 = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(b.vertices, i);
         const _tmp$2 = b.vertices;
         if (n === 0) {
           $panic();
         }
-        const p2 = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(_tmp$2, (i + 1 | 0) % n | 0);
+        const p2 = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(_tmp$2, (i + 1 | 0) % n | 0);
         const cp = _M0FP26bubuki12mooncollider27closest__point__on__segment(a.center, p1, p2);
         const d = _M0MP26bubuki12mooncollider4Vec210length__sq(_M0MP26bubuki12mooncollider4Vec23sub(a.center, cp));
         if (d < best_dist_sq.val) {
@@ -1674,8 +1679,8 @@
     }
   }
   function _M0FP26bubuki12mooncollider15solve__distance(j, bodies) {
-    const a = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(bodies, j.a);
-    const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(bodies, j.b);
+    const a = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(bodies, j.a);
+    const b = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(bodies, j.b);
     if (a.inv_mass + b.inv_mass === 0) {
       return undefined;
     }
@@ -1736,8 +1741,8 @@
     }
   }
   function _M0FP26bubuki12mooncollider15solve__revolute(j, bodies) {
-    const a = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(bodies, j.a);
-    const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(bodies, j.b);
+    const a = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(bodies, j.a);
+    const b = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(bodies, j.b);
     if (a.inv_mass + b.inv_mass === 0) {
       return undefined;
     }
@@ -1756,14 +1761,14 @@
     _M0FP26bubuki12mooncollider21solve__revolute__axis(a, b, ra, rb, rv2.y + bias.y, _M0MP26bubuki12mooncollider4Vec23new(0, 1));
   }
   function _M0FP26bubuki12mooncollider11solve__weld(j, bodies) {
-    const a = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(bodies, j.a);
-    const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(bodies, j.b);
+    const a = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(bodies, j.a);
+    const b = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(bodies, j.b);
     if (a.inv_mass + b.inv_mass === 0) {
       return undefined;
     }
     _M0FP26bubuki12mooncollider15solve__revolute(new _M0TP26bubuki12mooncollider13RevoluteJoint(j.a, j.b, j.local_anchor_a, j.local_anchor_b), bodies);
-    const a2 = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(bodies, j.a);
-    const b2 = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(bodies, j.b);
+    const a2 = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(bodies, j.a);
+    const b2 = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(bodies, j.b);
     const rel_angle = b2.angle - a2.angle - j.ref_angle;
     const c = rel_angle * 0.1 + (b2.angular_velocity - a2.angular_velocity);
     const inv_mass_sum = a2.inv_inertia + b2.inv_inertia;
@@ -1904,7 +1909,7 @@
               const pk = { _0: lo, _1: hi };
               if (!_M0MPB3Map8containsGUiiEuE(seen, pk)) {
                 _M0MPB3Map3setGUiiEuE(seen, pk, undefined);
-                _M0MPC15array5Array4pushGRP26bubuki12mooncollider9RigidBodyE(result, { _0: lo, _1: hi });
+                _M0MPC15array5Array4pushGRP46bubuki12mooncollider3cmd3web9WorldSlotE(result, { _0: lo, _1: hi });
               }
               _tmp$2 = j + 1 | 0;
               continue;
@@ -2013,7 +2018,7 @@
       const i = _tmp;
       if (i < self.bodies.length) {
         _L: {
-          const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, i);
+          const b = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.bodies, i);
           if (_M0MP26bubuki12mooncollider9RigidBody10is__static(b) || !b.alive) {
             break _L;
           }
@@ -2039,8 +2044,8 @@
     while (true) {
       const i = _tmp$2;
       if (i < self.bodies.length) {
-        if (_M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, i).alive) {
-          _M0MP26bubuki12mooncollider8GridHash6insert(grid, i, _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, i).aabb);
+        if (_M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.bodies, i).alive) {
+          _M0MP26bubuki12mooncollider8GridHash6insert(grid, i, _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.bodies, i).aabb);
         }
         _tmp$2 = i + 1 | 0;
         continue;
@@ -2058,15 +2063,15 @@
           let a_id;
           let b_id;
           _L$2: {
-            const _bind = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(pairs, k);
+            const _bind = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(pairs, k);
             const _a_id = _bind._0;
             const _b_id = _bind._1;
             a_id = _a_id;
             b_id = _b_id;
             break _L$2;
           }
-          const a = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, a_id);
-          const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, b_id);
+          const a = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.bodies, a_id);
+          const b = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.bodies, b_id);
           if (!a.alive || !b.alive) {
             break _L;
           }
@@ -2074,9 +2079,9 @@
           const sb = _M0MP26bubuki12mooncollider9RigidBody12world__shape(b);
           const m = _M0FP26bubuki12mooncollider7collide(sa, sb);
           if (_M0MP26bubuki12mooncollider8Manifold9colliding(m)) {
-            _M0MPC15array5Array4pushGRP26bubuki12mooncollider9RigidBodyE(contacts, _M0FP26bubuki12mooncollider13make__contact(a, b, m, m.contact));
+            _M0MPC15array5Array4pushGRP46bubuki12mooncollider3cmd3web9WorldSlotE(contacts, _M0FP26bubuki12mooncollider13make__contact(a, b, m, m.contact));
             if (_M0MP26bubuki12mooncollider8Manifold20has__second__contact(m)) {
-              _M0MPC15array5Array4pushGRP26bubuki12mooncollider9RigidBodyE(contacts, _M0FP26bubuki12mooncollider13make__contact(a, b, m, m.contact2));
+              _M0MPC15array5Array4pushGRP46bubuki12mooncollider3cmd3web9WorldSlotE(contacts, _M0FP26bubuki12mooncollider13make__contact(a, b, m, m.contact2));
             }
           }
           break _L;
@@ -2096,7 +2101,7 @@
         while (true) {
           const ci = _tmp$5;
           if (ci < contacts.length) {
-            _M0MP26bubuki12mooncollider5World14solve__contact(self, _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(contacts, ci));
+            _M0MP26bubuki12mooncollider5World14solve__contact(self, _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(contacts, ci));
             _tmp$5 = ci + 1 | 0;
             continue;
           } else {
@@ -2107,7 +2112,7 @@
         while (true) {
           const ji = _tmp$6;
           if (ji < self.joints.length) {
-            _M0FP26bubuki12mooncollider12solve__joint(_M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.joints, ji), self.bodies);
+            _M0FP26bubuki12mooncollider12solve__joint(_M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.joints, ji), self.bodies);
             _tmp$6 = ji + 1 | 0;
             continue;
           } else {
@@ -2125,7 +2130,7 @@
       const i = _tmp$5;
       if (i < self.bodies.length) {
         _L: {
-          const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, i);
+          const b = _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(self.bodies, i);
           if (_M0MP26bubuki12mooncollider9RigidBody10is__static(b) || !b.alive) {
             break _L;
           }
@@ -2144,7 +2149,7 @@
     while (true) {
       const ci = _tmp$6;
       if (ci < contacts.length) {
-        _M0MP26bubuki12mooncollider5World28positional__correct__contact(self, _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(contacts, ci));
+        _M0MP26bubuki12mooncollider5World28positional__correct__contact(self, _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(contacts, ci));
         _tmp$6 = ci + 1 | 0;
         continue;
       } else {
@@ -2182,28 +2187,43 @@
     }
     self.velocity = _M0MP26bubuki12mooncollider4Vec23add(self.velocity, _M0MP26bubuki12mooncollider4Vec25scale(impulse, self.inv_mass));
   }
-  function _M0MP46bubuki12mooncollider3cmd3web11WorldHolder3new() {
-    return new _M0TP46bubuki12mooncollider3cmd3web11WorldHolder(_M0MP26bubuki12mooncollider5World3new(), -1, _M0MP26bubuki12mooncollider4Vec24zero());
+  function _M0MP46bubuki12mooncollider3cmd3web9WorldSlot3new() {
+    return new _M0TP46bubuki12mooncollider3cmd3web9WorldSlot(_M0MP26bubuki12mooncollider5World3new(), -1, _M0MP26bubuki12mooncollider4Vec24zero());
+  }
+  function _M0FP46bubuki12mooncollider3cmd3web4slot() {
+    while (true) {
+      if (_M0FP46bubuki12mooncollider3cmd3web5slots.length <= _M0FP46bubuki12mooncollider3cmd3web7current.v) {
+        _M0MPC15array5Array4pushGRP46bubuki12mooncollider3cmd3web9WorldSlotE(_M0FP46bubuki12mooncollider3cmd3web5slots, _M0MP46bubuki12mooncollider3cmd3web9WorldSlot3new());
+        continue;
+      } else {
+        break;
+      }
+    }
+    return _M0MPC15array5Array2atGRP46bubuki12mooncollider3cmd3web9WorldSlotE(_M0FP46bubuki12mooncollider3cmd3web5slots, _M0FP46bubuki12mooncollider3cmd3web7current.v);
+  }
+  function _M0FP46bubuki12mooncollider3cmd3web15web__use__world(id) {
+    _M0FP46bubuki12mooncollider3cmd3web7current.v = id;
+    _M0FP46bubuki12mooncollider3cmd3web4slot();
   }
   function _M0FP46bubuki12mooncollider3cmd3web9web__init() {
-    _M0FP46bubuki12mooncollider3cmd3web6holder.w = _M0MP26bubuki12mooncollider5World3new();
-    _M0FP46bubuki12mooncollider3cmd3web6holder.drag_id = -1;
+    _M0FP46bubuki12mooncollider3cmd3web4slot().w = _M0MP26bubuki12mooncollider5World3new();
+    _M0FP46bubuki12mooncollider3cmd3web4slot().drag_id = -1;
   }
   function _M0FP46bubuki12mooncollider3cmd3web14web__add__ball(x, y, radius, mass) {
-    return _M0MP26bubuki12mooncollider5World9add__body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, _M0MP26bubuki12mooncollider7BodyDef7dynamic(_M0MP26bubuki12mooncollider4Vec23new(x, y), _M0MP26bubuki12mooncollider5Shape12from__circle(_M0MP26bubuki12mooncollider6Circle3new(_M0MP26bubuki12mooncollider4Vec24zero(), radius)), mass, 0.6));
+    return _M0MP26bubuki12mooncollider5World9add__body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, _M0MP26bubuki12mooncollider7BodyDef7dynamic(_M0MP26bubuki12mooncollider4Vec23new(x, y), _M0MP26bubuki12mooncollider5Shape12from__circle(_M0MP26bubuki12mooncollider6Circle3new(_M0MP26bubuki12mooncollider4Vec24zero(), radius)), mass, 0.6));
   }
   function _M0FP46bubuki12mooncollider3cmd3web13web__add__box(x, y, hw, hh, mass) {
-    return _M0MP26bubuki12mooncollider5World9add__body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, _M0MP26bubuki12mooncollider7BodyDef7dynamic(_M0MP26bubuki12mooncollider4Vec23new(x, y), _M0MP26bubuki12mooncollider5Shape10from__aabb(_M0MP26bubuki12mooncollider4AABB14from__min__max(_M0MP26bubuki12mooncollider4Vec23new(-hw, -hh), _M0MP26bubuki12mooncollider4Vec23new(hw, hh))), mass, 0.4));
+    return _M0MP26bubuki12mooncollider5World9add__body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, _M0MP26bubuki12mooncollider7BodyDef7dynamic(_M0MP26bubuki12mooncollider4Vec23new(x, y), _M0MP26bubuki12mooncollider5Shape10from__aabb(_M0MP26bubuki12mooncollider4AABB14from__min__max(_M0MP26bubuki12mooncollider4Vec23new(-hw, -hh), _M0MP26bubuki12mooncollider4Vec23new(hw, hh))), mass, 0.4));
   }
   function _M0FP46bubuki12mooncollider3cmd3web14web__add__wall(x, y, hw, hh) {
-    return _M0MP26bubuki12mooncollider5World9add__body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, _M0MP26bubuki12mooncollider7BodyDef8static__(_M0MP26bubuki12mooncollider4Vec23new(x, y), _M0MP26bubuki12mooncollider5Shape10from__aabb(_M0MP26bubuki12mooncollider4AABB14from__min__max(_M0MP26bubuki12mooncollider4Vec23new(-hw, -hh), _M0MP26bubuki12mooncollider4Vec23new(hw, hh)))));
+    return _M0MP26bubuki12mooncollider5World9add__body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, _M0MP26bubuki12mooncollider7BodyDef8static__(_M0MP26bubuki12mooncollider4Vec23new(x, y), _M0MP26bubuki12mooncollider5Shape10from__aabb(_M0MP26bubuki12mooncollider4AABB14from__min__max(_M0MP26bubuki12mooncollider4Vec23new(-hw, -hh), _M0MP26bubuki12mooncollider4Vec23new(hw, hh)))));
   }
   function _M0FP46bubuki12mooncollider3cmd3web9web__step(dt) {
-    if (_M0FP46bubuki12mooncollider3cmd3web6holder.drag_id >= 0) {
-      const b = _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, _M0FP46bubuki12mooncollider3cmd3web6holder.drag_id);
+    if (_M0FP46bubuki12mooncollider3cmd3web4slot().drag_id >= 0) {
+      const b = _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, _M0FP46bubuki12mooncollider3cmd3web4slot().drag_id);
       if (!_M0MP26bubuki12mooncollider9RigidBody10is__static(b)) {
-        const dx = _M0FP46bubuki12mooncollider3cmd3web6holder.drag_target.x - b.position.x;
-        const dy = _M0FP46bubuki12mooncollider3cmd3web6holder.drag_target.y - b.position.y;
+        const dx = _M0FP46bubuki12mooncollider3cmd3web4slot().drag_target.x - b.position.x;
+        const dy = _M0FP46bubuki12mooncollider3cmd3web4slot().drag_target.y - b.position.y;
         const k = 40 * b.mass;
         const c = 10 * b.mass;
         const fx = k * dx - c * b.velocity.x;
@@ -2211,28 +2231,28 @@
         _M0MP26bubuki12mooncollider9RigidBody12apply__force(b, _M0MP26bubuki12mooncollider4Vec23new(fx, fy));
       }
     }
-    _M0MP26bubuki12mooncollider5World4step(_M0FP46bubuki12mooncollider3cmd3web6holder.w, dt);
+    _M0MP26bubuki12mooncollider5World4step(_M0FP46bubuki12mooncollider3cmd3web4slot().w, dt);
   }
   function _M0FP46bubuki12mooncollider3cmd3web16web__body__count() {
-    return _M0MP26bubuki12mooncollider5World11body__count(_M0FP46bubuki12mooncollider3cmd3web6holder.w);
+    return _M0MP26bubuki12mooncollider5World11body__count(_M0FP46bubuki12mooncollider3cmd3web4slot().w);
   }
   function _M0FP46bubuki12mooncollider3cmd3web11web__get__x(id) {
-    return _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id).position.x;
+    return _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, id).position.x;
   }
   function _M0FP46bubuki12mooncollider3cmd3web11web__get__y(id) {
-    return _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id).position.y;
+    return _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, id).position.y;
   }
   function _M0FP46bubuki12mooncollider3cmd3web12web__get__vx(id) {
-    return _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id).velocity.x;
+    return _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, id).velocity.x;
   }
   function _M0FP46bubuki12mooncollider3cmd3web12web__get__vy(id) {
-    return _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id).velocity.y;
+    return _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, id).velocity.y;
   }
   function _M0FP46bubuki12mooncollider3cmd3web15web__get__angle(id) {
-    return _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id).angle;
+    return _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, id).angle;
   }
   function _M0FP46bubuki12mooncollider3cmd3web16web__get__radius(id) {
-    const b = _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id);
+    const b = _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, id);
     let c;
     _L: {
       const _bind = _M0MP26bubuki12mooncollider9RigidBody12world__shape(b);
@@ -2248,7 +2268,7 @@
     return c.radius;
   }
   function _M0FP46bubuki12mooncollider3cmd3web17web__get__half__w(id) {
-    const b = _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id);
+    const b = _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, id);
     let a;
     _L: {
       const _bind = _M0MP26bubuki12mooncollider9RigidBody12world__shape(b);
@@ -2264,7 +2284,7 @@
     return a.half.x;
   }
   function _M0FP46bubuki12mooncollider3cmd3web17web__get__half__h(id) {
-    const b = _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id);
+    const b = _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, id);
     let a;
     _L: {
       const _bind = _M0MP26bubuki12mooncollider9RigidBody12world__shape(b);
@@ -2280,7 +2300,7 @@
     return a.half.y;
   }
   function _M0FP46bubuki12mooncollider3cmd3web14web__get__type(id) {
-    const b = _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id);
+    const b = _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, id);
     if (_M0MP26bubuki12mooncollider9RigidBody10is__static(b)) {
       return 2;
     } else {
@@ -2296,23 +2316,23 @@
     _M0FP46bubuki12mooncollider3cmd3web9web__init();
   }
   function _M0FP46bubuki12mooncollider3cmd3web17web__set__gravity(x, y) {
-    _M0MP26bubuki12mooncollider5World12set__gravity(_M0FP46bubuki12mooncollider3cmd3web6holder.w, _M0MP26bubuki12mooncollider4Vec23new(x, y));
+    _M0MP26bubuki12mooncollider5World12set__gravity(_M0FP46bubuki12mooncollider3cmd3web4slot().w, _M0MP26bubuki12mooncollider4Vec23new(x, y));
   }
   function _M0FP46bubuki12mooncollider3cmd3web19web__apply__impulse(id, ix, iy) {
-    _M0MP26bubuki12mooncollider9RigidBody22apply__linear__impulse(_M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id), _M0MP26bubuki12mooncollider4Vec23new(ix, iy));
+    _M0MP26bubuki12mooncollider9RigidBody22apply__linear__impulse(_M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, id), _M0MP26bubuki12mooncollider4Vec23new(ix, iy));
   }
   function _M0FP46bubuki12mooncollider3cmd3web17web__remove__body(id) {
-    _M0MP26bubuki12mooncollider5World12remove__body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id);
+    _M0MP26bubuki12mooncollider5World12remove__body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, id);
   }
   function _M0FP46bubuki12mooncollider3cmd3web15web__pick__body(x, y) {
-    const n = _M0MP26bubuki12mooncollider5World11body__count(_M0FP46bubuki12mooncollider3cmd3web6holder.w);
+    const n = _M0MP26bubuki12mooncollider5World11body__count(_M0FP46bubuki12mooncollider3cmd3web4slot().w);
     const found = new _M0TPB8MutLocalGiE(-1);
     let _tmp = 0;
     while (true) {
       const i = _tmp;
       if (i < n) {
         _L: {
-          const b = _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, i);
+          const b = _M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web4slot().w, i);
           if (_M0MP26bubuki12mooncollider9RigidBody10is__static(b)) {
             break _L;
           }
@@ -2366,18 +2386,19 @@
     return found.val;
   }
   function _M0FP46bubuki12mooncollider3cmd3web16web__drag__start(id, x, y) {
-    _M0FP46bubuki12mooncollider3cmd3web6holder.drag_id = id;
-    _M0FP46bubuki12mooncollider3cmd3web6holder.drag_target = _M0MP26bubuki12mooncollider4Vec23new(x, y);
+    _M0FP46bubuki12mooncollider3cmd3web4slot().drag_id = id;
+    _M0FP46bubuki12mooncollider3cmd3web4slot().drag_target = _M0MP26bubuki12mooncollider4Vec23new(x, y);
   }
   function _M0FP46bubuki12mooncollider3cmd3web13web__drag__to(x, y) {
-    _M0FP46bubuki12mooncollider3cmd3web6holder.drag_target = _M0MP26bubuki12mooncollider4Vec23new(x, y);
+    _M0FP46bubuki12mooncollider3cmd3web4slot().drag_target = _M0MP26bubuki12mooncollider4Vec23new(x, y);
   }
   function _M0FP46bubuki12mooncollider3cmd3web9web__drop() {
-    _M0FP46bubuki12mooncollider3cmd3web6holder.drag_id = -1;
+    _M0FP46bubuki12mooncollider3cmd3web4slot().drag_id = -1;
   }
   function _M0FP46bubuki12mooncollider3cmd3web13register__all() {
     const g = _M0FP46bubuki12mooncollider3cmd3web10js__global("MoonCollider");
     _M0FP46bubuki12mooncollider3cmd3web7js__set(g, "web_init", _M0FP46bubuki12mooncollider3cmd3web9js__wrap0(_M0FP46bubuki12mooncollider3cmd3web9web__init));
+    _M0FP46bubuki12mooncollider3cmd3web7js__set(g, "web_use_world", _M0FP46bubuki12mooncollider3cmd3web10js__wrap1i(_M0FP46bubuki12mooncollider3cmd3web15web__use__world));
     _M0FP46bubuki12mooncollider3cmd3web7js__set(g, "web_add_ball", _M0FP46bubuki12mooncollider3cmd3web11js__wrap4di(_M0FP46bubuki12mooncollider3cmd3web14web__add__ball));
     _M0FP46bubuki12mooncollider3cmd3web7js__set(g, "web_add_box", _M0FP46bubuki12mooncollider3cmd3web11js__wrap5di(_M0FP46bubuki12mooncollider3cmd3web13web__add__box));
     _M0FP46bubuki12mooncollider3cmd3web7js__set(g, "web_add_wall", _M0FP46bubuki12mooncollider3cmd3web11js__wrap4di(_M0FP46bubuki12mooncollider3cmd3web14web__add__wall));
@@ -2402,7 +2423,7 @@
     _M0FP46bubuki12mooncollider3cmd3web7js__set(g, "web_drop", _M0FP46bubuki12mooncollider3cmd3web9js__wrap0(_M0FP46bubuki12mooncollider3cmd3web9web__drop));
   }
   (() => {
-    _M0FP46bubuki12mooncollider3cmd3web6holder.w = _M0MP26bubuki12mooncollider5World3new();
+    _M0FP46bubuki12mooncollider3cmd3web4slot();
     _M0FP46bubuki12mooncollider3cmd3web13register__all();
   })();
 })();

@@ -1,7 +1,7 @@
 # MoonCollider
 
-[![Website](https://img.shields.io/badge/website-mooncollider-58a6ff?style=flat-square)](https://bubuki.github.io/mooncollider/)
-[![Live Demo](https://img.shields.io/badge/demo-interactive%20physics-3fb950?style=flat-square)](https://bubuki.github.io/mooncollider/#sandbox)
+[![Website](https://img.shields.io/badge/website-mooncollider-58a6ff?style=flat-square)](https://uiwcvb.github.io/mooncollider/)
+[![Live Demo](https://img.shields.io/badge/demo-interactive%20physics-3fb950?style=flat-square)](https://uiwcvb.github.io/mooncollider/#sandbox)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green?style=flat-square)](LICENSE)
 [![MoonBit](https://img.shields.io/badge/MoonBit-0.1.20260703-orange?style=flat-square)](https://www.moonbitlang.com/)
 [![Tests](https://img.shields.io/badge/tests-56%2F56-brightgreen?style=flat-square)](#tests)

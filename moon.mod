@@ -15,7 +15,7 @@ version = "0.1.0"
 
 readme = "README.mbt.md"
 
-repository = ""
+repository = "https://gitlink.org.cn/bubuki/mooncollider"
 
 license = "Apache-2.0"
 

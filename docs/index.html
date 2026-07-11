@@ -765,7 +765,9 @@ moon add bubuki/mooncollider</code></pre>
             const my = (MC.web_get_y(bodies[i].id) + MC.web_get_y(bodies[j].id)) / 2;
             const newTier = bodies[i].tier + 1;
             const f = FRUITS[newTier];
-            // Mark old bodies for removal (can't actually remove, so just ignore them)
+            // Mark old bodies for removal
+            MC.web_remove_body(bodies[i].id);
+            MC.web_remove_body(bodies[j].id);
             bodies[i].dead = true;
             bodies[j].dead = true;
             const newId = MC.web_add_ball(mx, my, f.r, f.r * f.r * 3);

@@ -214,6 +214,7 @@ pub(all) struct RigidBody {
   shape : Shape
   mut aabb : AABB
   mut gravity_scale : Double
+  mut alive : Bool
 }
 pub fn RigidBody::apply_force(Self, Vec2) -> Unit
 pub fn RigidBody::apply_linear_impulse(Self, Vec2) -> Unit
@@ -295,6 +296,7 @@ pub fn World::body(Self, Int) -> RigidBody
 pub fn World::body_count(Self) -> Int
 pub fn World::joint_count(Self) -> Int
 pub fn World::new() -> Self
+pub fn World::remove_body(Self, Int) -> Unit
 pub fn World::set_gravity(Self, Vec2) -> Unit
 pub fn World::set_grid_cell_size(Self, Double) -> Unit
 pub fn World::step(Self, Double) -> Unit

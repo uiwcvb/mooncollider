@@ -253,8 +253,7 @@ fn web_apply_impulse(id : Int, ix : Double, iy : Double) -> Unit {
 
 ///|
 fn web_remove_body(id : Int) -> Unit {
-  // ponytail: no remove API on World yet; re-init if needed via web_clear
-  ignore(id)
+  holder.w.remove_body(id)
 }
 
 ///|

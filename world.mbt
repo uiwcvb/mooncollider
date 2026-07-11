@@ -67,6 +67,15 @@ pub fn World::body_count(self : World) -> Int {
 }
 
 ///|
+/// Remove a body by id (marks it as inactive). The body slot is reused
+/// for future additions to keep id stability.
+pub fn World::remove_body(self : World, id : Int) -> Unit {
+  if id >= 0 && id < self.bodies.length() {
+    self.bodies[id].alive = false
+  }
+}
+
+///|
 /// Add a joint to the world.
 pub fn World::add_joint(self : World, joint : Joint) -> Unit {
   self.joints.push(joint)
@@ -87,7 +96,7 @@ pub fn World::step(self : World, dt : Double) -> Unit {
   // 1. Integrate forces -> velocities.
   for i = 0; i < self.bodies.length(); i = i + 1 {
     let b = self.bodies[i]
-    if b.is_static() {
+    if b.is_static() || !b.alive {
       continue
     }
     // Apply gravity.
@@ -107,7 +116,9 @@ pub fn World::step(self : World, dt : Double) -> Unit {
   // 2. Broadphase.
   let grid = GridHash::new(self.grid_cell_size)
   for i = 0; i < self.bodies.length(); i = i + 1 {
-    grid.insert(i, self.bodies[i].aabb)
+    if self.bodies[i].alive {
+      grid.insert(i, self.bodies[i].aabb)
+    }
   }
   let pairs = grid.pairs()
   // 3. Narrowphase: build contact constraints.
@@ -116,6 +127,9 @@ pub fn World::step(self : World, dt : Double) -> Unit {
     let (a_id, b_id) = pairs[k]
     let a = self.bodies[a_id]
     let b = self.bodies[b_id]
+    if !a.alive || !b.alive {
+      continue
+    }
     let sa = a.world_shape()
     let sb = b.world_shape()
     let m = collide(sa, sb)
@@ -147,7 +161,7 @@ pub fn World::step(self : World, dt : Double) -> Unit {
   // 5. Integrate velocities -> positions.
   for i = 0; i < self.bodies.length(); i = i + 1 {
     let b = self.bodies[i]
-    if b.is_static() {
+    if b.is_static() || !b.alive {
       continue
     }
     b.position = b.position.add(b.velocity.scale(dt))

@@ -50,6 +50,9 @@ pub(all) struct RigidBody {
   mut aabb : AABB
   /// Whether gravity applies to this body.
   mut gravity_scale : Double
+  /// Whether this body is active (not removed). Inactive bodies are skipped
+  /// during simulation and collision. Set to false by `World::remove_body`.
+  mut alive : Bool
 }
 
 ///|
@@ -147,6 +150,7 @@ pub fn RigidBody::from_def(id : Int, def : BodyDef) -> RigidBody {
     shape: def.shape,
     aabb: AABB::new(Vec2::zero(), Vec2::zero()),
     gravity_scale: def.gravity_scale,
+    alive: true,
   }
   body.update_aabb()
   body

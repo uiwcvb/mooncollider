@@ -105,7 +105,7 @@
     this._0 = param0;
   }
   _M0DTP26bubuki12mooncollider5Shape7Polygon.prototype.$tag = 2;
-  function _M0TP26bubuki12mooncollider9RigidBody(param0, param1, param2, param3, param4, param5, param6, param7, param8, param9, param10, param11, param12, param13, param14, param15, param16, param17, param18) {
+  function _M0TP26bubuki12mooncollider9RigidBody(param0, param1, param2, param3, param4, param5, param6, param7, param8, param9, param10, param11, param12, param13, param14, param15, param16, param17, param18, param19) {
     this.id = param0;
     this.body_type = param1;
     this.position = param2;
@@ -125,6 +125,7 @@
     this.shape = param16;
     this.aabb = param17;
     this.gravity_scale = param18;
+    this.alive = param19;
   }
   function _M0TP26bubuki12mooncollider8Manifold(param0, param1, param2, param3) {
     this.normal = param0;
@@ -856,12 +857,12 @@
   function _M0FPC14math3cos(_tmp) {
     return Math.cos(_tmp);
   }
-  function _M0IP26bubuki12mooncollider7CellKeyPB2Eq5equal(_x_892, _x_893) {
-    return _x_892.cx === _x_893.cx && _x_892.cy === _x_893.cy;
+  function _M0IP26bubuki12mooncollider7CellKeyPB2Eq5equal(_x_894, _x_895) {
+    return _x_894.cx === _x_895.cx && _x_894.cy === _x_895.cy;
   }
-  function _M0IP26bubuki12mooncollider7CellKeyPB4Hash13hash__combine(_x_888, _x_889) {
-    _M0IPC13int3IntPB4Hash13hash__combine(_x_888.cx, _x_889);
-    _M0IPC13int3IntPB4Hash13hash__combine(_x_888.cy, _x_889);
+  function _M0IP26bubuki12mooncollider7CellKeyPB4Hash13hash__combine(_x_890, _x_891) {
+    _M0IPC13int3IntPB4Hash13hash__combine(_x_890.cx, _x_891);
+    _M0IPC13int3IntPB4Hash13hash__combine(_x_890.cy, _x_891);
   }
   function _M0MP26bubuki12mooncollider4Vec23new(x, y) {
     return new _M0TP26bubuki12mooncollider4Vec2(x, y);
@@ -1163,7 +1164,7 @@
         }
       }
     }
-    const body = new _M0TP26bubuki12mooncollider9RigidBody(id, def.body_type, def.position, def.angle, _M0MP26bubuki12mooncollider4Vec24zero(), 0, _M0MP26bubuki12mooncollider4Vec24zero(), 0, mass, inv_mass, inertia, inv_inertia, def.restitution, def.friction, def.linear_damping, def.angular_damping, def.shape, _M0MP26bubuki12mooncollider4AABB3new(_M0MP26bubuki12mooncollider4Vec24zero(), _M0MP26bubuki12mooncollider4Vec24zero()), def.gravity_scale);
+    const body = new _M0TP26bubuki12mooncollider9RigidBody(id, def.body_type, def.position, def.angle, _M0MP26bubuki12mooncollider4Vec24zero(), 0, _M0MP26bubuki12mooncollider4Vec24zero(), 0, mass, inv_mass, inertia, inv_inertia, def.restitution, def.friction, def.linear_damping, def.angular_damping, def.shape, _M0MP26bubuki12mooncollider4AABB3new(_M0MP26bubuki12mooncollider4Vec24zero(), _M0MP26bubuki12mooncollider4Vec24zero()), def.gravity_scale, true);
     _M0MP26bubuki12mooncollider9RigidBody12update__aabb(body);
     return body;
   }
@@ -1178,6 +1179,14 @@
   }
   function _M0MP26bubuki12mooncollider5World11body__count(self) {
     return self.bodies.length;
+  }
+  function _M0MP26bubuki12mooncollider5World12remove__body(self, id) {
+    if (id >= 0 && id < self.bodies.length) {
+      _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, id).alive = false;
+      return;
+    } else {
+      return;
+    }
   }
   function _M0MP26bubuki12mooncollider4AABB3max(self) {
     return _M0MP26bubuki12mooncollider4Vec23add(self.center, self.half);
@@ -2005,7 +2014,7 @@
       if (i < self.bodies.length) {
         _L: {
           const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, i);
-          if (_M0MP26bubuki12mooncollider9RigidBody10is__static(b)) {
+          if (_M0MP26bubuki12mooncollider9RigidBody10is__static(b) || !b.alive) {
             break _L;
           }
           b.velocity = _M0MP26bubuki12mooncollider4Vec23add(b.velocity, _M0MP26bubuki12mooncollider4Vec25scale(self.gravity, b.gravity_scale * dt));
@@ -2030,7 +2039,9 @@
     while (true) {
       const i = _tmp$2;
       if (i < self.bodies.length) {
-        _M0MP26bubuki12mooncollider8GridHash6insert(grid, i, _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, i).aabb);
+        if (_M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, i).alive) {
+          _M0MP26bubuki12mooncollider8GridHash6insert(grid, i, _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, i).aabb);
+        }
         _tmp$2 = i + 1 | 0;
         continue;
       } else {
@@ -2043,26 +2054,32 @@
     while (true) {
       const k = _tmp$3;
       if (k < pairs.length) {
-        let a_id;
-        let b_id;
         _L: {
-          const _bind = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(pairs, k);
-          const _a_id = _bind._0;
-          const _b_id = _bind._1;
-          a_id = _a_id;
-          b_id = _b_id;
-          break _L;
-        }
-        const a = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, a_id);
-        const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, b_id);
-        const sa = _M0MP26bubuki12mooncollider9RigidBody12world__shape(a);
-        const sb = _M0MP26bubuki12mooncollider9RigidBody12world__shape(b);
-        const m = _M0FP26bubuki12mooncollider7collide(sa, sb);
-        if (_M0MP26bubuki12mooncollider8Manifold9colliding(m)) {
-          _M0MPC15array5Array4pushGRP26bubuki12mooncollider9RigidBodyE(contacts, _M0FP26bubuki12mooncollider13make__contact(a, b, m, m.contact));
-          if (_M0MP26bubuki12mooncollider8Manifold20has__second__contact(m)) {
-            _M0MPC15array5Array4pushGRP26bubuki12mooncollider9RigidBodyE(contacts, _M0FP26bubuki12mooncollider13make__contact(a, b, m, m.contact2));
+          let a_id;
+          let b_id;
+          _L$2: {
+            const _bind = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(pairs, k);
+            const _a_id = _bind._0;
+            const _b_id = _bind._1;
+            a_id = _a_id;
+            b_id = _b_id;
+            break _L$2;
           }
+          const a = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, a_id);
+          const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, b_id);
+          if (!a.alive || !b.alive) {
+            break _L;
+          }
+          const sa = _M0MP26bubuki12mooncollider9RigidBody12world__shape(a);
+          const sb = _M0MP26bubuki12mooncollider9RigidBody12world__shape(b);
+          const m = _M0FP26bubuki12mooncollider7collide(sa, sb);
+          if (_M0MP26bubuki12mooncollider8Manifold9colliding(m)) {
+            _M0MPC15array5Array4pushGRP26bubuki12mooncollider9RigidBodyE(contacts, _M0FP26bubuki12mooncollider13make__contact(a, b, m, m.contact));
+            if (_M0MP26bubuki12mooncollider8Manifold20has__second__contact(m)) {
+              _M0MPC15array5Array4pushGRP26bubuki12mooncollider9RigidBodyE(contacts, _M0FP26bubuki12mooncollider13make__contact(a, b, m, m.contact2));
+            }
+          }
+          break _L;
         }
         _tmp$3 = k + 1 | 0;
         continue;
@@ -2109,7 +2126,7 @@
       if (i < self.bodies.length) {
         _L: {
           const b = _M0MPC15array5Array2atGRP26bubuki12mooncollider9RigidBodyE(self.bodies, i);
-          if (_M0MP26bubuki12mooncollider9RigidBody10is__static(b)) {
+          if (_M0MP26bubuki12mooncollider9RigidBody10is__static(b) || !b.alive) {
             break _L;
           }
           b.position = _M0MP26bubuki12mooncollider4Vec23add(b.position, _M0MP26bubuki12mooncollider4Vec25scale(b.velocity, dt));
@@ -2284,7 +2301,9 @@
   function _M0FP46bubuki12mooncollider3cmd3web19web__apply__impulse(id, ix, iy) {
     _M0MP26bubuki12mooncollider9RigidBody22apply__linear__impulse(_M0MP26bubuki12mooncollider5World4body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id), _M0MP26bubuki12mooncollider4Vec23new(ix, iy));
   }
-  function _M0FP46bubuki12mooncollider3cmd3web17web__remove__body(id) {}
+  function _M0FP46bubuki12mooncollider3cmd3web17web__remove__body(id) {
+    _M0MP26bubuki12mooncollider5World12remove__body(_M0FP46bubuki12mooncollider3cmd3web6holder.w, id);
+  }
   function _M0FP46bubuki12mooncollider3cmd3web15web__pick__body(x, y) {
     const n = _M0MP26bubuki12mooncollider5World11body__count(_M0FP46bubuki12mooncollider3cmd3web6holder.w);
     const found = new _M0TPB8MutLocalGiE(-1);

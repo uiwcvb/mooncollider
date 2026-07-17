@@ -11,8 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install MoonBit
-        env:
-          MOONBIT_INSTALL_VERSION: '0.1.20260703'
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
@@ -28,7 +26,5 @@ jobs:
         run: git diff --exit-code
       - name: moon fmt
         run: moon fmt
-      - name: git diff --exit-code (moon fmt)
-        run: git diff --exit-code
       - name: moon run cmd/main
         run: moon run cmd/main

@@ -24,8 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup MoonBit
-        env:
-          MOONBIT_INSTALL_VERSION: '0.1.20260703'
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH

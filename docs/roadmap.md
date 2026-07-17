@@ -3,24 +3,28 @@
 ## Done
 
 - Vec2 math
-- AABB / Circle / Polygon shapes (convex hull, regular, box builders)
-- Narrowphase: all 9 shape-pair collisions via SAT + closest-point
-- GJK + EPA generic convex collision
-- Raycast: ray vs AABB / Circle / Polygon
-- Broadphase: uniform grid hash + loose quadtree + sweep-and-prune + dynamic AABB tree
-- RigidBody: mass, inertia, restitution, friction, damping, static/dynamic
-- World::step: integration + broadphase + narrowphase + impulse + friction + Baumgarte resolution
-- Bounce demo, stacking demo, raycast demo, batch collision example
-- CI, README, tests (40 blackbox + whitebox)
+- Shapes: AABB, Circle, convex Polygon (convex_hull, regular, box)
+- Narrowphase: all 9 shape pairs via SAT, 2-point contact manifolds
+- GJK + EPA for arbitrary convex shapes
+- Raycast: ray vs AABB/Circle/Polygon
+- Broadphase: GridHash, QuadTree, SweepAndPrune, AABBTree (with remove/update)
+- Rigid body: mass, inertia, restitution, friction, damping
+- Sequential-impulse solver: 12 velocity iterations, 4 position iterations
+- Baumgarte position correction (re-evaluates penetration per iteration)
+- AABB bodies zero angular velocity (no phantom rotation)
+- Joints: Distance, Revolute, Weld
+- CCD: circle/AABB sweep (closed-form + sub-stepping for polygons)
+- Body removal: World::remove_body with alive flag
+- Fuzz testing: random shapes, degenerate geometry, NaN/Inf, energy divergence
+- Determinism: cross-platform snapshot tests
+- Web demo: interactive sandbox driven by real MoonCollider engine (JS target)
+- Published to mooncakes.io as uiwcvb/mooncollider@0.1.0
 
 ## Future
 
-- Continuous collision detection (CCD) to prevent tunneling at high speeds.
-- Multi-contact manifolds (two contact points per pair) for stable stacking.
-- Joints: revolute, prismatic, distance, weld.
-- Islanding + sleeping for large worlds.
-- Broadphase: dynamic AABB tree as a third option.
-- Narrowphase: GJK + EPA for general convex shapes (currently SAT only).
-- Broadphase: sweep-and-prune as a simple alternative.
-- Serialization of world state.
-- Optional spatial query API (point query, AABB query).
+- Sleeping / islanding for large worlds
+- Serialization of world state
+- Spatial query API (point query, AABB query, shape cast)
+- Closed-form CCD for polygon targets
+- Contact persistence / warm starting
+- Soft constraints (frequency/damping ratio) for joints

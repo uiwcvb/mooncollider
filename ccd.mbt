@@ -63,7 +63,7 @@ fn ccd_circle_vs_circle(
   let ray = Ray::new(start, delta)
   let h = raycast_circle(ray, expanded)
   if h.hit() && h.t <= 1.0 {
-    { t: h.t, point: h.point, normal: h.normal.neg(), hit: true }
+    { t: h.t, point: h.point, normal: h.normal, hit: true }
   } else {
     CCDSweep::miss()
   }
@@ -81,7 +81,7 @@ fn ccd_circle_vs_aabb(
   let ray = Ray::new(start, delta)
   let h = raycast_aabb(ray, expanded)
   if h.hit() && h.t <= 1.0 {
-    { t: h.t, point: h.point, normal: h.normal.neg(), hit: true }
+    { t: h.t, point: h.point, normal: h.normal, hit: true }
   } else {
     CCDSweep::miss()
   }
@@ -121,7 +121,7 @@ fn ccd_circle_vs_polygon_sampled(
         }
       }
       let point = start.add(delta.scale(hi))
-      return { t: hi, point, normal: m.normal.neg(), hit: true }
+      return { t: hi, point, normal: m.normal, hit: true }
     }
     prev_t = t
   }
@@ -160,7 +160,7 @@ pub fn ccd_sweep_aabb(
         }
       }
       let point = start_center.add(delta.scale(hi))
-      return { t: hi, point, normal: m.normal.neg(), hit: true }
+      return { t: hi, point, normal: m.normal, hit: true }
     }
     prev_t = t
   }

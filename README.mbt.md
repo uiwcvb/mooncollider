@@ -210,3 +210,22 @@ mooncollider/
 ## License
 
 Apache-2.0.
+
+## References
+
+This project implements well-known physics algorithms from scratch in MoonBit.
+No source code was ported from the following references; they were used as
+algorithmic guidance only:
+
+- **Box2D** by Erin Catto — sequential-impulse solver, Baumgarte position
+  correction, contact manifold generation, joint constraints.
+  - Source: <https://github.com/erincatto/box2d>
+  - License: MIT (GitHub repository)
+  - Reference scope: solver architecture, collision response theory
+
+- **Real-Time Collision Detection** by Christer Ericson (Morgan Kaufmann,
+  2004) — SAT, GJK, EPA, closest-point algorithms, sweeping.
+  - Source: Book (ISBN 978-1558607323)
+  - License: Published book (proprietary text; algorithms are public domain
+    mathematics)
+  - Reference scope: narrowphase algorithms (SAT, GJK, EPA), CCD sweep theory

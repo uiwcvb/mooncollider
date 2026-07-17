@@ -789,9 +789,9 @@ test "joint/revolute_pin" {
   let _ = w.add_body(
     @mooncollider.BodyDef::dynamic(
       @mooncollider.Vec2::new(2.0, 0.0),
-      @mooncollider.Shape::from_aabb(
-        @mooncollider.AABB::new(
-          @mooncollider.Vec2::zero(),
+      @mooncollider.Shape::from_polygon(
+        @mooncollider.Polygon::box(
+          @mooncollider.Vec2::new(-0.5, -0.5),
           @mooncollider.Vec2::new(0.5, 0.5),
         ),
       ),
@@ -1024,7 +1024,7 @@ test "determinism/stacking_snapshot" {
   inspect(
     snap,
     content=(
-      #|{ x: 0, y: 0 }{ x: 0.02270076257216061, y: 0.486213083232441 }{ x: -0.06361493865846218, y: 1.4702608458456554 }{ x: -0.255789502694509, y: 2.4568940035999653 }
+      #|{ x: 0, y: 0 }{ x: 0.013496443049389472, y: 0.4948296616175004 }{ x: 0.007184537450333676, y: 1.4896630300832914 }{ x: -0.03700792978732792, y: 2.48460244004862 }
     ),
   )
 }
@@ -1064,7 +1064,161 @@ test "determinism/bounce_snapshot" {
   inspect(
     snap,
     content=(
-      #|{ x: 0, y: 0.4899999999999999 }{ x: 0, y: 0 }
+      #|{ x: 0, y: 0.49499999999999994 }{ x: 0, y: -3.5910604374153675e-189 }
     ),
   )
+}
+
+// ---------------------------------------------------------------------------
+// Strict regression tests for acceptance review issues
+// ---------------------------------------------------------------------------
+
+///|
+/// Circle vs Polygon normal direction: normal must point from Circle (A)
+/// toward Polygon (B). When circle is to the left of a polygon, normal.x
+/// must be positive (pointing right toward the polygon).
+test "regression/circle_polygon_normal_direction" {
+  // Polygon: a box centered at (5, 0).
+  let poly = @mooncollider.Polygon::box(
+    @mooncollider.Vec2::new(4.0, -1.0),
+    @mooncollider.Vec2::new(6.0, 1.0),
+  )
+  // Circle to the left, center at (3.5, 0), radius 1 — overlapping (edge at 4.5, inside polygon).
+  let circle = @mooncollider.Circle::new(@mooncollider.Vec2::new(3.5, 0.0), 1.0)
+  let m = @mooncollider.collide_circle_polygon(circle, poly)
+  assert_true(m.colliding())
+  // Normal from circle toward polygon: x must be positive.
+  assert_true(m.normal.x > 0.0)
+  // Normal must be unit length.
+  let len = m.normal.length()
+  assert_true((len - 1.0).abs() < 1.0e-9)
+}
+
+///|
+/// Polygon vs Circle normal direction: when dispatched via collide() with
+/// polygon as A and circle as B, normal must point from polygon toward circle.
+test "regression/polygon_circle_normal_direction" {
+  let poly = @mooncollider.Polygon::box(
+    @mooncollider.Vec2::new(4.0, -1.0),
+    @mooncollider.Vec2::new(6.0, 1.0),
+  )
+  let circle = @mooncollider.Circle::new(@mooncollider.Vec2::new(3.5, 0.0), 1.0)
+  let m = @mooncollider.collide(
+    @mooncollider.Shape::from_polygon(poly),
+    @mooncollider.Shape::from_circle(circle),
+  )
+  assert_true(m.colliding())
+  // Normal from polygon toward circle: x must be negative.
+  assert_true(m.normal.x < 0.0)
+  let len = m.normal.length()
+  assert_true((len - 1.0).abs() < 1.0e-9)
+}
+
+///|
+/// CCD normal direction: a circle sweeping rightward into a wall must
+/// produce a normal pointing leftward (from wall toward ball, opposing
+/// motion).
+test "regression/ccd_normal_direction" {
+  let wall = @mooncollider.Shape::from_aabb(
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(4.9, -5.0),
+      @mooncollider.Vec2::new(5.1, 5.0),
+    ),
+  )
+  let sweep = @mooncollider.ccd_sweep_circle(
+    0.3,
+    @mooncollider.Vec2::new(0.0, 0.0),
+    @mooncollider.Vec2::new(8.0, 0.0),
+    wall,
+  )
+  assert_true(sweep.hit)
+  // Normal points from wall back toward ball (opposing motion): x < 0.
+  assert_true(sweep.normal.x < 0.0)
+  // t must be in (0, 1) — not at the very start or end.
+  assert_true(sweep.t > 0.0 && sweep.t < 1.0)
+  // Stop position must be before wall exit.
+  let stop_x = 8.0 * sweep.t
+  assert_true(stop_x + 0.3 <= 5.1)
+}
+
+///|
+/// Five-box stacking stability: 5 boxes stacked should not collapse.
+/// After 400 steps, each box should still be above the one below it.
+test "regression/five_box_stacking_stability" {
+  let w = @mooncollider.World::new()
+  let _ = w.add_body(
+    @mooncollider.BodyDef::static_(
+      @mooncollider.Vec2::new(0.0, 0.0),
+      @mooncollider.Shape::from_aabb(
+        @mooncollider.AABB::from_min_max(
+          @mooncollider.Vec2::new(-10.0, -1.0),
+          @mooncollider.Vec2::new(10.0, 0.0),
+        ),
+      ),
+    ),
+  )
+  for i = 0; i < 5; i = i + 1 {
+    let def = @mooncollider.BodyDef::dynamic(
+      @mooncollider.Vec2::new(0.0, 1.0 + i.to_double() * 1.05),
+      @mooncollider.Shape::from_aabb(
+        @mooncollider.AABB::new(
+          @mooncollider.Vec2::zero(),
+          @mooncollider.Vec2::new(0.5, 0.5),
+        ),
+      ),
+      1.0,
+      0.0,
+    )
+    def.friction = 0.6
+    let _ = w.add_body(def)
+  }
+  for _step = 0; _step < 400; _step = _step + 1 {
+    w.step(0.016)
+  }
+  // After 400 steps, boxes must still be stacked: y0 < y1 < y2 < y3 < y4.
+  let y0 = w.body(1).position.y
+  let y1 = w.body(2).position.y
+  let y2 = w.body(3).position.y
+  let y3 = w.body(4).position.y
+  let y4 = w.body(5).position.y
+  assert_true(y0 < y1)
+  assert_true(y1 < y2)
+  assert_true(y2 < y3)
+  assert_true(y3 < y4)
+  // Top box should not have fallen below its starting height minus a margin.
+  assert_true(y4 > 3.0)
+  // Bottom box should be near the floor (y ~ 0.5).
+  assert_true(y0 > 0.3 && y0 < 0.8)
+}
+
+///|
+/// CCD stress demo consistency: without CCD the ball tunnels through a
+/// thin wall; with CCD it is caught. The two outcomes must differ.
+test "regression/ccd_tunneling_consistency" {
+  let ball_radius = 0.3
+  let start = @mooncollider.Vec2::new(0.0, 0.0)
+  let delta = @mooncollider.Vec2::new(8.0, 0.0) // 500 u/s * 0.016s
+  let wall = @mooncollider.Shape::from_aabb(
+    @mooncollider.AABB::from_min_max(
+      @mooncollider.Vec2::new(4.9, -5.0),
+      @mooncollider.Vec2::new(5.1, 5.0),
+    ),
+  )
+  // Without CCD: check if discrete collision misses at both start and end.
+  let shape_start = @mooncollider.Shape::from_circle(
+    @mooncollider.Circle::new(start, ball_radius),
+  )
+  let shape_end = @mooncollider.Shape::from_circle(
+    @mooncollider.Circle::new(start.add(delta), ball_radius),
+  )
+  let miss_start = !@mooncollider.collide(shape_start, wall).colliding()
+  let miss_end = !@mooncollider.collide(shape_end, wall).colliding()
+  let tunneled = miss_start && miss_end
+  // With CCD: sweep must detect the hit.
+  let sweep = @mooncollider.ccd_sweep_circle(ball_radius, start, delta, wall)
+  // The two outcomes must be consistent: if tunneled, CCD must catch it.
+  assert_true(tunneled)
+  assert_true(sweep.hit)
+  // If discrete misses, CCD must find the hit — no contradiction.
+  assert_true(tunneled == sweep.hit)
 }

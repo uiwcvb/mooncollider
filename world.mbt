@@ -27,9 +27,9 @@ pub fn World::new() -> World {
     bodies: [],
     joints: [],
     grid_cell_size: 2.0,
-    velocity_iterations: 8,
-    position_correction: 0.2,
-    slop: 0.01,
+    velocity_iterations: 12,
+    position_correction: 0.4,
+    slop: 0.005,
   }
 }
 
@@ -164,14 +164,23 @@ pub fn World::step(self : World, dt : Double) -> Unit {
     if b.is_static() || !b.alive {
       continue
     }
+    // AABB shapes don't support rotation; zero angular velocity to avoid
+    // friction impulses inducing phantom rotation that destabilizes stacks.
+    match b.shape {
+      Shape::AABB(_) => b.angular_velocity = 0.0
+      _ => ()
+    }
     b.position = b.position.add(b.velocity.scale(dt))
     b.angle = b.angle + b.angular_velocity * dt
     b.update_aabb()
   }
-  // 6. Positional correction (Baumgarte) — applied after integration so the
-  //    solver's velocity work isn't undone.
-  for ci = 0; ci < contacts.length(); ci = ci + 1 {
-    self.positional_correct_contact(contacts[ci])
+  // 6. Positional correction (Baumgarte) — multiple iterations for stable
+  //    stacking. Each pass re-checks penetration and pushes bodies apart.
+  let pos_iters = 4
+  for _pi = 0; _pi < pos_iters; _pi = _pi + 1 {
+    for ci = 0; ci < contacts.length(); ci = ci + 1 {
+      self.positional_correct_contact(contacts[ci])
+    }
   }
 }
 
@@ -187,7 +196,6 @@ fn make_contact(
     a,
     b,
     normal: m.normal,
-    depth: m.depth,
     contact_point: point,
     restitution: if a.restitution < b.restitution {
       a.restitution
@@ -204,7 +212,6 @@ priv struct Contact {
   a : RigidBody
   b : RigidBody
   normal : Vec2
-  depth : Double
   contact_point : Vec2
   restitution : Double
   friction : Double
@@ -294,16 +301,24 @@ fn World::solve_contact(self : World, c : Contact) -> Unit {
 }
 
 ///|
-/// Baumgarte positional correction for a contact.
+/// Baumgarte positional correction for a contact. Re-evaluates penetration
+/// from current body positions so multiple iterations converge.
 fn World::positional_correct_contact(self : World, c : Contact) -> Unit {
+  // Re-compute penetration from current positions.
+  let sa = c.a.world_shape()
+  let sb = c.b.world_shape()
+  let m = collide(sa, sb)
+  if !m.colliding() {
+    return
+  }
   let inv_sum = c.a.inv_mass + c.b.inv_mass
   if inv_sum == 0.0 {
     return
   }
-  let correction = (c.depth - self.slop).max(0.0) /
+  let correction = (m.depth - self.slop).max(0.0) /
     inv_sum *
     self.position_correction
-  let delta = c.normal.scale(correction)
+  let delta = m.normal.scale(correction)
   if !c.a.is_static() {
     c.a.position = c.a.position.sub(delta.scale(c.a.inv_mass))
     c.a.update_aabb()

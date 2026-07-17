@@ -289,15 +289,24 @@ pub fn collide_circle_polygon(a : Circle, b : Polygon) -> Manifold {
       best_point = cp
     }
   }
-  let d = a.center.sub(best_point)
+  let to_circle = a.center.sub(best_point)
   let dist = best_dist_sq.sqrt()
   // Check if the circle center is inside the polygon.
   let inside = point_in_polygon(a.center, b)
   if !inside && dist >= a.radius {
     return Manifold::none()
   }
-  let normal = if dist > 0.0 {
-    d.scale(1.0 / dist)
+  // Normal points from A (circle) to B (polygon surface).
+  let normal = if inside {
+    // Center inside polygon: push toward nearest edge (outward from A to B).
+    if dist > 0.0 {
+      to_circle.scale(1.0 / dist)
+    } else {
+      Vec2::new(0.0, 1.0)
+    }
+  } else if dist > 0.0 {
+    // Center outside: normal from circle center toward polygon surface.
+    to_circle.scale(-1.0 / dist)
   } else {
     Vec2::new(0.0, 1.0)
   }

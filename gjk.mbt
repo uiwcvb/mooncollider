@@ -217,11 +217,11 @@ fn epa(a : Shape, b : Shape, simplex : Array[Vec2]) -> Manifold {
     best_depth = d
   }
   // Contact point: approximate via the support points.
-  let contact = a
-    .support(best_normal)
-    .add(b.support(best_normal.neg()))
-    .scale(0.5)
-  Manifold::new(best_normal, best_depth, contact)
+  // EPA normal in Minkowski-difference (A-B) space points from B toward A
+  // (the separation direction). Manifold convention requires A→B, so negate.
+  let normal = best_normal.neg()
+  let contact = a.support(normal).add(b.support(normal.neg())).scale(0.5)
+  Manifold::new(normal, best_depth, contact)
 }
 
 ///|

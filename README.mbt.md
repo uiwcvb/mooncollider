@@ -234,7 +234,7 @@ MoonCollider's independent contributions and differentiation:
 - **Four standalone broadphase structures** (GridHash / QuadTree /
   SweepAndPrune / AABBTree) available for direct use; `World` currently uses
   GridHash internally.
-- **Educational clarity** — 5,390 tracked MoonBit lines including tests and
+- **Educational clarity** — about 5.4k tracked MoonBit lines including tests and
   examples, suitable for learning SAT, GJK/EPA, sequential impulses, joints,
   and CCD.
 - **Interactive web sandbox** — the real engine compiled to JS drives

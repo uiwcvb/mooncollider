@@ -9,22 +9,26 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install MoonBit
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s '0.1.20260807'
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
-      - name: moon version
-        run: moon version
-      - name: moon check
-        run: moon check
-      - name: moon test
-        run: moon test
+      - name: moon version --all
+        run: moon version --all
+      - name: moon check --deny-warn --target all
+        run: moon check --deny-warn --target all
+      - name: moon test --deny-warn --target all
+        run: moon test --deny-warn --target all
+      - name: moon build --target all
+        run: moon build --target all
       - name: moon info
         run: moon info
       - name: git diff --exit-code (moon info)
         run: git diff --exit-code
       - name: moon fmt
         run: moon fmt
+      - name: git diff --exit-code (moon fmt)
+        run: git diff --exit-code
       - name: moon run cmd/main
         run: moon run cmd/main

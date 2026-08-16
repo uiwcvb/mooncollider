@@ -37,8 +37,12 @@ Five layers, each independently usable:
 
 ## References
 
-- Box2D (MIT): solver architecture, Baumgarte, manifold generation.
-- Real-Time Collision Detection (Ericson): SAT, GJK, EPA, CCD theory.
+- Box2D (<https://github.com/erincatto/box2d>, MIT): solver architecture,
+  Baumgarte correction, friction, contact manifolds, and joint constraints.
+- Real-Time Collision Detection by Christer Ericson
+  (<https://realtimecollisiondetection.net/>, ISBN 978-1558607323): SAT,
+  GJK/EPA, closest-point algorithms, and CCD sweep theory. The book is a
+  copyrighted publication; no text, figures, or source code were copied.
 
 ## Limitations
 

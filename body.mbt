@@ -121,14 +121,21 @@ pub fn RigidBody::from_def(id : Int, def : BodyDef) -> RigidBody {
   }
   let (inertia, inv_inertia) = match def.body_type {
     BodyType::Static => (0.0, 0.0)
-    BodyType::Dynamic => {
-      let i = compute_inertia(def.shape, mass)
-      if i > 0.0 {
-        (i, 1.0 / i)
-      } else {
-        (0.0, 0.0)
+    BodyType::Dynamic =>
+      // AABB bodies are axis-aligned by definition and cannot rotate.
+      // Give them infinite rotational inertia so contact/friction impulses
+      // cannot accumulate phantom angular motion and lateral stack drift.
+      match def.shape {
+        Shape::AABB(_) => (0.0, 0.0)
+        _ => {
+          let i = compute_inertia(def.shape, mass)
+          if i > 0.0 {
+            (i, 1.0 / i)
+          } else {
+            (0.0, 0.0)
+          }
+        }
       }
-    }
   }
   let body = {
     id,

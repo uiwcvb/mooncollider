@@ -1024,7 +1024,7 @@ test "determinism/stacking_snapshot" {
   inspect(
     snap,
     content=(
-      #|{ x: 0, y: 0 }{ x: 0.013496443049389472, y: 0.4948296616175004 }{ x: 0.007184537450333676, y: 1.4896630300832914 }{ x: -0.03700792978732792, y: 2.48460244004862 }
+      #|{ x: 0, y: 0 }{ x: 0, y: 0.4949431026155614 }{ x: 0, y: 1.4898875786299601 }{ x: 0, y: 2.4848674318376847 }
     ),
   )
 }
@@ -1143,7 +1143,7 @@ test "regression/ccd_normal_direction" {
 
 ///|
 /// Five-box stacking stability: 5 boxes stacked should not collapse.
-/// After 400 steps, each box should still be above the one below it.
+/// After 2000 steps, every box must remain in its expected stack position.
 test "regression/five_box_stacking_stability" {
   let w = @mooncollider.World::new()
   let _ = w.add_body(
@@ -1172,10 +1172,10 @@ test "regression/five_box_stacking_stability" {
     def.friction = 0.6
     let _ = w.add_body(def)
   }
-  for _step = 0; _step < 400; _step = _step + 1 {
+  for _step = 0; _step < 2000; _step = _step + 1 {
     w.step(0.016)
   }
-  // After 400 steps, boxes must still be stacked: y0 < y1 < y2 < y3 < y4.
+  // Boxes must still be stacked: y0 < y1 < y2 < y3 < y4.
   let y0 = w.body(1).position.y
   let y1 = w.body(2).position.y
   let y2 = w.body(3).position.y
@@ -1185,10 +1185,19 @@ test "regression/five_box_stacking_stability" {
   assert_true(y1 < y2)
   assert_true(y2 < y3)
   assert_true(y3 < y4)
-  // Top box should not have fallen below its starting height minus a margin.
-  assert_true(y4 > 3.0)
-  // Bottom box should be near the floor (y ~ 0.5).
-  assert_true(y0 > 0.3 && y0 < 0.8)
+  // Each center should remain near its ideal resting height (0.5 + i).
+  assert_true((y0 - 0.5).abs() < 0.05)
+  assert_true((y1 - 1.5).abs() < 0.05)
+  assert_true((y2 - 2.5).abs() < 0.05)
+  assert_true((y3 - 3.5).abs() < 0.05)
+  assert_true((y4 - 4.5).abs() < 0.05)
+  // Axis-aligned boxes must not acquire lateral or angular drift.
+  for id = 1; id <= 5; id = id + 1 {
+    let b = w.body(id)
+    assert_true(b.position.x.abs() < 1.0e-9)
+    assert_true(b.velocity.length() < 0.1)
+    assert_true(b.angular_velocity.abs() < 1.0e-12)
+  }
 }
 
 ///|

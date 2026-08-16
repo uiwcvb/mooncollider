@@ -67,8 +67,8 @@ pub fn World::body_count(self : World) -> Int {
 }
 
 ///|
-/// Remove a body by id (marks it as inactive). The body slot is reused
-/// for future additions to keep id stability.
+/// Remove a body by id by marking it inactive. Existing ids remain stable;
+/// future additions receive new ids.
 pub fn World::remove_body(self : World, id : Int) -> Unit {
   if id >= 0 && id < self.bodies.length() {
     self.bodies[id].alive = false

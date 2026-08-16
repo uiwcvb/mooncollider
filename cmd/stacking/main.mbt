@@ -38,9 +38,9 @@ fn main {
   println("step, box0_y, box1_y, box2_y, box3_y, box4_y")
   let dt = 0.016
   let mut step = 0
-  while step < 400 {
+  while step < 2000 {
     world.step(dt)
-    if step % 20 == 0 {
+    if step % 100 == 0 {
       let b0 = world.body(1).position.y
       let b1 = world.body(2).position.y
       let b2 = world.body(3).position.y

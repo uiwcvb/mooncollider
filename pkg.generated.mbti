@@ -304,4 +304,3 @@ pub fn World::step(Self, Double) -> Unit
 // Type aliases
 
 // Traits
-

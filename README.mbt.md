@@ -3,7 +3,7 @@
 [![Website](https://img.shields.io/badge/website-mooncollider-58a6ff?style=flat-square)](https://uiwcvb.github.io/mooncollider/)
 [![Live Demo](https://img.shields.io/badge/demo-interactive%20physics-3fb950?style=flat-square)](https://uiwcvb.github.io/mooncollider/#sandbox)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green?style=flat-square)](LICENSE)
-[![MoonBit](https://img.shields.io/badge/MoonBit-0.1.20260703-orange?style=flat-square)](https://www.moonbitlang.com/)
+[![MoonBit](https://img.shields.io/badge/MoonBit-0.1.20260807-orange?style=flat-square)](https://www.moonbitlang.com/)
 [![Tests](https://img.shields.io/badge/tests-61%2F61-brightgreen?style=flat-square)](#tests)
 
 **A 2D game physics and collision detection library for [MoonBit](https://www.moonbitlang.com/).**
@@ -219,7 +219,7 @@ implements its algorithms directly in MoonBit (see References below).
 
 For context, the MoonBit ecosystem already contains:
 
-- **`moon_rapier`** (moonbit-community) — a MoonBit port of the Rapier
+- **`Milky2018/moon_rapier`** (`moonbit-community/moon_rapier`) — a MoonBit port of the Rapier
   physics engine, exposing Rapier-style 2D/3D APIs (RigidBodySet,
   PhysicsPipeline, IslandManager, etc.) for API compatibility with Rapier.
 - **`mizchi/physics`** / **`kagura_physics`** — collision/pathfinding
@@ -228,13 +228,15 @@ For context, the MoonBit ecosystem already contains:
 
 MoonCollider's independent contributions and differentiation:
 
-- **Pure 2D, zero-dependency** — a self-contained 2D physics library with no
-  runtime dependencies; `moon_rapier` targets Rapier API compatibility
+- **Pure 2D, no third-party runtime dependencies** — a self-contained 2D
+  physics library using only MoonBit core packages; `moon_rapier` targets Rapier API compatibility
   (2D+3D), while MoonCollider focuses on a clean, minimal 2D-only API.
-- **Four broadphase structures** (GridHash / QuadTree / SweepAndPrune /
-  AABBTree) with a uniform interface, selectable per `World`.
-- **Educational clarity** — small, readable source (~5.4k LOC) suitable for
-  learning how SAT, GJK/EPA, sequential impulses, joints, and CCD work.
+- **Four standalone broadphase structures** (GridHash / QuadTree /
+  SweepAndPrune / AABBTree) available for direct use; `World` currently uses
+  GridHash internally.
+- **Educational clarity** — 5,390 tracked MoonBit lines including tests and
+  examples, suitable for learning SAT, GJK/EPA, sequential impulses, joints,
+  and CCD.
 - **Interactive web sandbox** — the real engine compiled to JS drives
   <https://uiwcvb.github.io/mooncollider/>; anyone can try the physics in a
   browser without installing anything.
@@ -256,7 +258,14 @@ algorithmic guidance only:
 
 - **Real-Time Collision Detection** by Christer Ericson (Morgan Kaufmann,
   2004) — SAT, GJK, EPA, closest-point algorithms, sweeping.
-  - Source: Book (ISBN 978-1558607323)
-  - License: Published book (proprietary text; algorithms are public domain
-    mathematics)
+  - Source: Book (ISBN 978-1558607323) and author companion site:
+    <https://realtimecollisiondetection.net/>
+  - Copyright: Published, copyrighted book; this project does not reproduce
+    its text, figures, or source code
   - Reference scope: narrowphase algorithms (SAT, GJK, EPA), CCD sweep theory
+
+## Maintainer and contest identity
+
+MoonCollider is an individual OSC2026 entry by **Li Tianxiang (李天翔)**.
+GitHub account `uiwcvb`, GitLink account / Git author `bubuki`, and the
+competition applicant refer to the same person.

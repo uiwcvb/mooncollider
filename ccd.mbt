@@ -6,8 +6,8 @@
 /// ("tunneling"). CCD sweeps the body along its velocity vector and finds the
 /// earliest time of impact, then advances the body only that far.
 ///
-/// This module provides a standalone `ccd_sweep` function for manual use and
-/// a `World::step_ccd` variant that applies CCD to all dynamic bodies.
+/// This module provides standalone sweep functions for manual use. Callers
+/// can use the returned time of impact to integrate fast-moving bodies.
 
 ///|
 /// Result of a CCD sweep: the time of impact `t` in [0, 1] along the sweep,

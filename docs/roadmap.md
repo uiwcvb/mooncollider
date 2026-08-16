@@ -18,7 +18,7 @@
 - Fuzz testing: random shapes, degenerate geometry, NaN/Inf, energy divergence
 - Determinism: cross-platform snapshot tests
 - Web demo: interactive sandbox driven by real MoonCollider engine (JS target)
-- Published to mooncakes.io as uiwcvb/mooncollider@0.1.0
+- Published to mooncakes.io as uiwcvb/mooncollider@0.2.1
 
 ## Future
 

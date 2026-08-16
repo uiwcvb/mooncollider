@@ -211,6 +211,37 @@ mooncollider/
 
 Apache-2.0.
 
+## Position in the MoonBit ecosystem
+
+MoonCollider is an **original, from-scratch implementation** — it is not a
+port of or an extension to any existing MoonBit physics package, and it
+implements its algorithms directly in MoonBit (see References below).
+
+For context, the MoonBit ecosystem already contains:
+
+- **`moon_rapier`** (moonbit-community) — a MoonBit port of the Rapier
+  physics engine, exposing Rapier-style 2D/3D APIs (RigidBodySet,
+  PhysicsPipeline, IslandManager, etc.) for API compatibility with Rapier.
+- **`mizchi/physics`** / **`kagura_physics`** — collision/pathfinding
+  helpers extracted from the Kagura game engine.
+- **`FlyCloudC/GJK`** — a standalone GJK algorithm implementation.
+
+MoonCollider's independent contributions and differentiation:
+
+- **Pure 2D, zero-dependency** — a self-contained 2D physics library with no
+  runtime dependencies; `moon_rapier` targets Rapier API compatibility
+  (2D+3D), while MoonCollider focuses on a clean, minimal 2D-only API.
+- **Four broadphase structures** (GridHash / QuadTree / SweepAndPrune /
+  AABBTree) with a uniform interface, selectable per `World`.
+- **Educational clarity** — small, readable source (~5.4k LOC) suitable for
+  learning how SAT, GJK/EPA, sequential impulses, joints, and CCD work.
+- **Interactive web sandbox** — the real engine compiled to JS drives
+  <https://uiwcvb.github.io/mooncollider/>; anyone can try the physics in a
+  browser without installing anything.
+- **Adversarial testing** — fuzz suites (random shape storms, degenerate
+  geometry, NaN/Inf detection, energy checks) plus cross-platform
+  determinism snapshots, 61 tests total.
+
 ## References
 
 This project implements well-known physics algorithms from scratch in MoonBit.
